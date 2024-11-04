@@ -1,0 +1,405 @@
+const express = require("express");
+const mysql = require("mysql");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const db=mysql.createConnection({
+    host:"localhost",
+    user:"root",
+    password:"",
+    database:"cet_mca"
+})
+
+db.connect((err) => {
+    if (err) {
+      console.error('Error connecting to the database:', err);
+      process.exit(1);
+    }
+    console.log('Database connected successfully!');
+  });
+
+app.get('/users',(req,res)=>{
+    const sql="select * from user";
+    db.query(sql,(err,data)=>{
+        if(err) return res.json(err);
+        return res.json(data);
+    })
+})
+
+app.post('/addInstitution',(req,res)=>{   
+    sql = "INSERT INTO `institution` (`inst_name`, `inst_email`, `inst_address`, `inst_phno`) VALUES (?,?,?,?)"
+    const values = [
+        req.body.name,
+        req.body.email,
+        req.body.address,
+        req.body.phone
+    ]
+    db.query(sql,values,(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({ id: result.insertId,name:req.body.name })
+    })
+})
+
+app.post('/addInstAdmin',(req,res)=>{   
+    // res.json({message:req.body.inst_id})
+    sql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
+    const values = [
+        req.body.name,
+        req.body.email,
+        req.body.regno,
+        req.body.phone,
+        req.body.password,
+        req.body.gender,
+        req.body.dob,
+        "admin",
+        req.body.inst_id
+    ]
+    db.query(sql,values,(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({ id: result.insertId, message: 'Admin added successfully' })
+    })
+})
+
+app.post('/login', (req, res) => {
+    if(req.body.type === "admin"){
+        var values = [
+            req.body.email,
+            req.body.password,
+            req.body.type,
+            parseInt(req.body.institution)
+        ]
+        var sql = "select * from users where user_email = ? and user_password = ? and user_type =? and  inst_id = ?";
+        //var sql = `SELECT * FROM users WHERE user_email = ? AND user_password = ? AND user_type = ? AND inst_id = (SELECT inst_id FROM institution WHERE inst_name = ?)`;
+    }
+    else if(req.body.type === "student"){
+        var values = [
+            req.body.regno,
+            req.body.password,
+            req.body.type
+        ]
+        var sql = "select * from users inner join student on users.user_id = student.student_id where user_regno = ? and user_password = ? and user_type= ?";
+    }
+    else if(req.body.type === "teacher"){
+        var values = [
+            req.body.email,
+            req.body.password,
+            req.body.type,
+            parseInt(req.body.institution)
+        ]
+        var sql = "select * from users inner join teacher on users.user_id = teacher.teacher_id where user_email = ? and user_password = ? and user_type= ?";
+    }
+    db.query(sql,values, (err, result) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.json({ message: 'Some Error Occurred: ' + err });
+        }
+        
+        if (result.length > 0) {
+            // return res.json({ id: result[0].user_id ,name:result[0].user_name,email:result[0].user_email,regno:result[0].user_regno,inst_id:result[0].inst_id});
+            return res.json(result[0]);
+
+        } else {
+            return res.json({ message: 'Invalid credentials or user not found'});
+        }
+    });
+});
+
+app.get('/getCollege',(req,res)=>{
+    sql="select inst_id,inst_name from institution";
+    db.query(sql,(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/addDepartment',(req,res)=>{   
+    // res.json({message:req.body.inst_id})
+    sql="INSERT INTO `department` (`dept_name`, `inst_id`) VALUES (?,?)";
+    const values = [
+        req.body.name,
+        req.body.inst_id,
+    ]
+    db.query(sql,values,(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Department added successfully' })
+    })
+})
+
+app.post('/deleteDepartment',(req,res)=>{   
+    sql="DELETE FROM `department` WHERE `dept_id`=?";
+    db.query(sql,[req.body.id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Department Deleted successfully' })
+    })
+})
+
+app.post('/updateDepartment',(req,res)=>{   
+    sql="UPDATE `department` SET `dept_name`=? WHERE `dept_id` = ?";
+    db.query(sql,[req.body.name,req.body.id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Department Updated successfully' })
+    })
+})
+
+app.post('/getDepartments',(req,res)=>{
+    sql="select * from department where `inst_id`=?";
+    db.query(sql,[req.body.inst_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/addCourse', (req, res) => { 
+    const sqlSelectDept = "SELECT `dept_id` FROM department WHERE `dept_name` = ?";
+    db.query(sqlSelectDept, [req.body.dept_name], (err, result) => {
+        if (err) {
+            return res.json({ message: 'Error occurred: ' + err });
+        }
+        if (result.length === 0) {
+            return res.json({ message: 'Department not found' });
+        }
+        const dept_id = result[0].dept_id;
+        const sqlInsertCourse = "INSERT INTO `course` (`course_name`, `dept_id`, `sem_no`) VALUES (?, ?, ?)";
+        const values = [
+            req.body.name,
+            dept_id,
+            req.body.sem
+        ];
+
+        db.query(sqlInsertCourse, values, (err, result) => {
+            if (err) {
+                return res.json({ message: 'Error occurred: ' + err });
+            }
+            return res.json({ message: 'Course added successfully' });
+        });
+    });
+});
+
+app.post('/deleteCourse',(req,res)=>{   
+    sql="DELETE FROM `course` WHERE `course_id`=?";
+    db.query(sql,[req.body.id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Course Deleted successfully' })
+    })
+})
+
+app.post('/updateCourse',(req,res)=>{   
+    sql="UPDATE `course` SET `course_name`=? ,`sem_no`=? WHERE `course_id` = ?";
+    db.query(sql,[req.body.courseFields.name,req.body.courseFields.sem,req.body.id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Course Updated successfully' })
+    })
+})
+
+app.post('/getCourses',(req,res)=>{
+    sql="select * from course inner join department on course.dept_id = department.dept_id where department.inst_id= ?";
+    db.query(sql,[req.body.inst_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/fetchCourses',(req,res)=>{
+    sql="select * from course where dept_id= ?";
+    db.query(sql,[req.body.dept_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/addStudent', (req, res) => { 
+    const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
+    
+    const values = [
+        req.body.name,
+        req.body.email,
+        req.body.regno,
+        req.body.phone,
+        req.body.password,
+        req.body.gender,
+        req.body.dob,
+        "student",
+        parseInt(req.body.inst_id),
+    ]
+    db.query(userSql, values, (err, result) => {
+        if (err) {
+            return res.json({ message: 'Error occurred USER: ' + err });
+        }
+        const user_id = result.insertId;
+        const studentSql = "INSERT INTO `student` (`student_id`, `course_id`, `current_sem`,`status`) VALUES (?, ?, ?, ?)";
+        const values2 = [
+            user_id,
+            parseInt(req.body.course),
+            parseInt(req.body.semester),
+            "approved"
+        ];
+
+        db.query(studentSql, values2, (err, result) => {
+            if (err) {
+                return res.json({ message: 'Error occurred STUDENT: ' + err });
+            }
+            return res.json({ message: 'Student added successfully' });
+        });
+    });
+});
+
+app.post('/addTeacher', (req, res) => { 
+    const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
+    
+    const values = [
+        req.body.name,
+        req.body.email,
+        req.body.regno,
+        req.body.phone,
+        req.body.password,
+        req.body.gender,
+        req.body.dob,
+        "teacher",
+        parseInt(req.body.inst_id),
+    ]
+    db.query(userSql, values, (err, result) => {
+        if (err) {
+            return res.json({ message: 'Error occurred USER: ' + err });
+        }
+        const user_id = result.insertId;
+        const teacherSql = "INSERT INTO `teacher` (`teacher_id`, `dept_id`,`status`) VALUES (?, ?, ?)";
+        const values2 = [
+            user_id,
+            parseInt(req.body.dept_id),
+            "approved"
+        ];
+
+        db.query(teacherSql, values2, (err, result) => {
+            if (err) {
+                return res.json({ message: 'Error occurred TEACHER: ' + err });
+            }
+            return res.json({ message: 'Teacher added successfully' });
+        });
+    });
+});
+
+app.post('/addSubject',(req,res)=>{   
+    // res.json({message:req.body.inst_id})
+    sql="INSERT INTO `subject` (`subject_name`, `course_id`,`course_sem`) VALUES (?,?,?)";
+    const values = [
+        req.body.name,
+        req.body.course_id,
+        req.body.sem
+    ]
+    db.query(sql,values,(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'subject added successfully' })
+    })
+})
+
+app.post('/deleteSubject',(req,res)=>{
+    
+})
+
+app.post('/getSubjects',(req,res)=>{
+    //sql="select * from subject inner join course on course.course_id = subject.course_id inner join department on course.dept_id = department.dept_id inner join subject_assignment on subject_assignment.subject_id = subject.subject_id where department.inst_id= ?";
+    sql ="select * from subject inner join course on course.course_id = subject.course_id inner join department on course.dept_id = department.dept_id where department.inst_id= ?";
+    db.query(sql,[req.body.inst_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/fetchSubjects',(req,res)=>{
+    sql ="select * from subject inner join subject_assignment on subject.subject_id = subject_assignment.subject_id where subject_assignment.teacher_id= ?";
+    db.query(sql,[req.body.user_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.get('/getTeachers',(req,res)=>{
+    sql ="select user_name,teacher_id from subject_assignment INNER join users on users.user_id = subject_assignment.teacher_id WHERE subject_id = ?";
+    db.query(sql,[req.query.sub_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        if (result.length === 0) {
+            return res.json({ message: 'no teacher assigned' });
+        }
+        return res.json(result)
+    })
+})
+
+app.get('/fetchTeachers/:dept_id',(req,res)=>{
+    sql ="select user_name,user_id from users INNER join teacher on users.user_id = teacher.teacher_id WHERE dept_id = ?";
+    db.query(sql,[req.params.dept_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        if (result.length === 0) {
+            return res.json({ message: 'no teacher in department' });
+        }
+        return res.json(result)
+    })
+})
+
+app.post('/assignTeacher',(req,res)=>{   
+    // res.json({message:req.body.inst_id})
+    sql="INSERT INTO `subject_assignment` (`subject_id`, `teacher_id`) VALUES (?,?)";
+    const values = [
+        req.body.sub_id,
+        req.body.id,
+    ]
+    db.query(sql,values,(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'teacher assigned successfully' })
+    })
+})
+
+app.post('/createExam',(req,res)=>{
+    const sqlExam = "INSERT INTO `exam` (`exam_name`, `description`, `subject_id`,`starting_date`, `ending_date`, `duration`, `teacher_id`) VALUES (?,?,?,?,?,?,?)";
+    const valuesExam = [
+        req.body.exam_name,
+        req.body.description,
+        req.body.subject_id,
+        req.body.starting,
+        req.body.ending,
+        req.body.duration,
+        req.body.teacher,
+    ]
+    var exam_id,subjective_id=0,quiz_id=0;
+    db.query(sqlExam,valuesExam,(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured exam' + err})
+        else{
+            exam_id =result.insertId;
+            if(req.body.subjective > 0){
+                sqlSubjective = "insert into `subjective` (`exam_id`,`no_of_questions`) values (?,?)";
+                valuesSubjective = [exam_id,req.body.subjective]
+                db.query(sqlSubjective,valuesSubjective,(err,result1)=>{
+                    if(err)
+                        return res.json({message:'Some Error Occured sub'+err})
+                    else
+                        subjective_id=result1.insertId;
+                })
+            }
+            if(req.body.objective >0){
+                sqlQuiz = "insert into `quiz` (`exam_id`,`no_of_questions`) values (?,?)";
+                valuesQuiz = [exam_id,req.body.objective]
+                db.query(sqlQuiz,valuesQuiz,(err,result2)=>{
+                    if(err)
+                        return res.json({message:'Some Error Occured quiz'+err})
+                    else
+                        quiz_id=result2.insertId;
+                })
+            }
+            return res.json({exam_id,subjective_id,quiz_id})
+        }
+    })
+})
+
+app.listen(5000)
