@@ -55,10 +55,10 @@ export default function Home() {
               <TabsContent value="exam">                 
                   <div className="flex  flex-col ">
                       <div className='text-right mr-5'>
-                        <Button variant="outline" className="mr-5 bg-slate-600 text-white mt-5" onClick={create}>ADD</Button>
+                        {/* <Button variant="outline" className="mr-5 bg-slate-600 text-white mt-5" onClick={create}>ADD</Button> */}
 
-                        {/* <ExamForm /> */}
-                        <QuizForm />
+                        <ExamForm />
+                        {/* <QuizForm /> */}
                       </div>
                       <div className='mt-5 m-7'>
                         <ExamList />

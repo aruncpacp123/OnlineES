@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea"
 import {  Select,  SelectContent,  SelectItem,  SelectTrigger,  SelectValue,} from "@/components/ui/select"
 import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from "@/components/ui/dialog"
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
 // import { ExamContext } from '../utils/contexts'
 export default function ExamForm() {
     // const {exam} = useContext(ExamContext);
@@ -15,7 +14,6 @@ export default function ExamForm() {
     // const { add,step1,step2,setStep1} = useContext(UserContext);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [subjects,setSubjects] = useState([]);
-    const navigate = useNavigate();
     const [formFields,setFormFields] = useState({
         exam_name:'',
         subject_id:'',
@@ -39,18 +37,11 @@ export default function ExamForm() {
 
     const createExam = async (e)=>{
         e.preventDefault();
+        console.log(typeof(formFields.subject_id))
 // setStep1(true)
         try{
             const res = await axios.post('http://localhost:5000/createExam',formFields);
-            console.log(formFields.objective)
-            if(objective !=0)//res.data.quiz_id!=0
-                navigate('/teacher/exam/step1',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })
-            else
-                navigate('/teacher/exam/step2',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })
-                
-
-            console.log(res.data);
-            
+            console.log(res.data)
         }catch(err){
             console.error(err)
         }

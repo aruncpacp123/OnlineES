@@ -359,7 +359,7 @@ app.post('/assignTeacher',(req,res)=>{
         return res.json({message: 'teacher assigned successfully' })
     })
 })
-
+/*
 app.post('/createExam',(req,res)=>{
     const sqlExam = "INSERT INTO `exam` (`exam_name`, `description`, `subject_id`,`starting_date`, `ending_date`, `duration`, `teacher_id`) VALUES (?,?,?,?,?,?,?)";
     const valuesExam = [
@@ -401,5 +401,135 @@ app.post('/createExam',(req,res)=>{
         }
     })
 })
+*/  
+app.post('/createExam', (req, res) => {
+    const sqlExam = "INSERT INTO `exam` (`exam_name`, `description`, `subject_id`, `starting_date`, `ending_date`, `duration`, `teacher_id`) VALUES (?,?,?,?,?,?,?)";
+    const valuesExam = [
+        req.body.exam_name,
+        req.body.description,
+        req.body.subject_id,
+        req.body.starting,
+        req.body.ending,
+        req.body.duration,
+        req.body.teacher,
+    ];
+
+    let exam_id = 0, subjective_id = 0, quiz_id = 0;
+
+    // Insert exam data
+    db.query(sqlExam, valuesExam, (err, result) => {
+        if (err) return res.json({ message: 'Some Error Occurred in exam: ' + err });
+
+        exam_id = result.insertId;
+
+        // Promise for subjective insertion
+        const subjectivePromise = new Promise((resolve, reject) => {
+            if (req.body.subjective > 0) {
+                const sqlSubjective = "INSERT INTO `subjective` (`exam_id`, `no_of_questions`) VALUES (?,?)";
+                const valuesSubjective = [exam_id, req.body.subjective];
+                db.query(sqlSubjective, valuesSubjective, (err, result1) => {
+                    if (err) {
+                        reject('Some Error Occurred in subjective: ' + err);
+                    } else {
+                        subjective_id = result1.insertId;
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
+        });
+
+        // Promise for quiz insertion
+        const quizPromise = new Promise((resolve, reject) => {
+            if (req.body.objective > 0) {
+                const sqlQuiz = "INSERT INTO `quiz` (`exam_id`, `no_of_questions`) VALUES (?,?)";
+                const valuesQuiz = [exam_id, req.body.objective];
+                db.query(sqlQuiz, valuesQuiz, (err, result2) => {
+                    if (err) {
+                        reject('Some Error Occurred in quiz: ' + err);
+                    } else {
+                        quiz_id = result2.insertId;
+                        resolve();
+                    }
+                });
+            } else {
+                resolve();
+            }
+        });
+
+        // Execute both promises and return final result once both complete
+        Promise.all([subjectivePromise, quizPromise])
+            .then(() => {
+                if(subjective_id!=0){
+                    examUpdate1="update exam set subjective_id = ? where exam_id =?";
+                    db.query(examUpdate1, [subjective_id,exam_id], (err, result2) => {
+                        if (err) {
+                            reject('Some Error Occurred in subjective updation: ' + err);
+                        } else {
+                            quiz_id = result2.insertId;
+                            resolve();
+                        }
+                    });
+                }
+                if(quiz_id!=0){
+                    examUpdate1="update exam set quiz_id = ? where exam_id =?";
+                    db.query(examUpdate1, [quiz_id,exam_id], (err, result2) => {
+                        if (err) {
+                            reject('Some Error Occurred in Quiz updation: ' + err);
+                        } else {
+                            quiz_id = result2.insertId;
+                            resolve();
+                        }
+                    });
+                }
+                return res.json({ exam_id, subjective_id, quiz_id });
+            })
+            .catch((error) => {
+                return res.json({ message: error });
+            });
+    });
+});
+
+app.post('/addQuizQuestions/:quiz_id', (req, res) => {
+    const sql = "INSERT INTO `quiz_questions` (`quiz_id`, `question_title`, `option1`, `option2`, `option3`, `option4`, `answer`) VALUES ?";
+    // Transform each question in `req.body` into an array of value
+    const values = req.body.map(question => [
+        req.params.quiz_id,
+        question.question,
+        question.option1,
+        question.option2,
+        question.option3,
+        question.option4,
+        question.answer,
+    ]);
+
+    db.query(sql, [values], (err, result) => {
+        if (err) {
+            console.log("Error inserting questions:", err);
+            return res.json({ message: 'An error occurred: ' + err });
+        }
+        return res.json({ message: 'Questions added successfully' });
+    });
+});
+
+app.post('/addSubjectiveQuestions/:subjective_id', (req, res) => {
+    const sql = "INSERT INTO `subjective_questions` (`subjective_id`, `question_title`, `mark`) VALUES (?,?,?)";
+    
+    // Transform each question in `req.body` into an array of values
+    const values = req.body.map(question => [
+        req.params.subjective_id,
+        question.question,
+        question.mark,
+    ]);
+
+    db.query(sql, [values], (err, result) => {
+        if (err) {
+            console.log("Error inserting questions:", err);
+            return res.json({ message: 'An error occurred: ' + err });
+        }
+        return res.json({ message: 'Questions added successfully' });
+    });
+});
 
 app.listen(5000)
