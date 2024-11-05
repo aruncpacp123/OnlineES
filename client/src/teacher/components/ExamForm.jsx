@@ -43,7 +43,7 @@ export default function ExamForm() {
         try{
             const res = await axios.post('http://localhost:5000/createExam',formFields);
             console.log(formFields.objective)
-            if(objective !=0)//res.data.quiz_id!=0
+            if(res.data.quiz_id !=null)//res.data.quiz_id!=0
                 navigate('/teacher/exam/step1',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })
             else
                 navigate('/teacher/exam/step2',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })

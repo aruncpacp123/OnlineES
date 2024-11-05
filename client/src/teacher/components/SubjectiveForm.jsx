@@ -7,17 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter, CardHeader, CardDescription,CardTitle ,} from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import axios from 'axios';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './navbar';
 
 export default function SubjectiveForm() {
-    const answerOptions = ["Option 1","Option 2","Option 3","Option 4"];
     const location = useLocation();
-    const exam_id = location.state?.exam_id; 
-    const quiz_id = location.state?.quiz_id; 
-    const quiz_no = location.state?.quiz_no; 
     const subjective_id = location.state?.subjective_id;
     const subjective_no = location.state?.sub_no;
+    const navigate = useNavigate();
+
   const initialFields = Array.from({ length: subjective_no }, () => ({
     question: '',
     mark: '',
@@ -35,7 +33,9 @@ export default function SubjectiveForm() {
     e.preventDefault();
     try {
         console.log(formFields)
+        
       const res = await axios.post(`http://localhost:5000/addSubjectiveQuestions/${subjective_id}`, formFields);
+
       
         navigate('/teacher')
       console.log(res.data);

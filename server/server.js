@@ -402,6 +402,7 @@ app.post('/createExam',(req,res)=>{
     })
 })
 */  
+/*
 app.post('/createExam', (req, res) => {
     const sqlExam = "INSERT INTO `exam` (`exam_name`, `description`, `subject_id`, `starting_date`, `ending_date`, `duration`, `teacher_id`) VALUES (?,?,?,?,?,?,?)";
     const valuesExam = [
@@ -490,6 +491,103 @@ app.post('/createExam', (req, res) => {
             });
     });
 });
+*/
+
+app.post('/createExam', (req, res) => {
+    const sqlExam = "INSERT INTO `exam` (`exam_name`, `description`, `subject_id`, `starting_date`, `ending_date`, `duration`, `teacher_id`) VALUES (?,?,?,?,?,?,?)";
+    const valuesExam = [
+        req.body.exam_name,
+        req.body.description,
+        req.body.subject_id,
+        req.body.starting,
+        req.body.ending,
+        req.body.duration,
+        req.body.teacher,
+    ];
+
+    db.query(sqlExam, valuesExam, (err, result) => {
+        if (err) return res.json({ message: 'Some Error Occurred in exam: ' + err });
+
+        const exam_id = result.insertId;
+
+        // Promise for subjective insertion
+        const subjectivePromise = new Promise((resolve, reject) => {
+            if (req.body.subjective > 0) {
+                const sqlSubjective = "INSERT INTO `subjective` (`exam_id`, `no_of_questions`) VALUES (?,?)";
+                const valuesSubjective = [exam_id, req.body.subjective];
+                db.query(sqlSubjective, valuesSubjective, (err, result1) => {
+                    if (err) {
+                        reject('Some Error Occurred in subjective: ' + err);
+                    } else {
+                        resolve(result1.insertId);
+                    }
+                });
+            } else {
+                resolve(null);
+            }
+        });
+
+        // Promise for quiz insertion
+        const quizPromise = new Promise((resolve, reject) => {
+            if (req.body.objective > 0) {
+                const sqlQuiz = "INSERT INTO `quiz` (`exam_id`, `no_of_questions`) VALUES (?,?)";
+                const valuesQuiz = [exam_id, req.body.objective];
+                db.query(sqlQuiz, valuesQuiz, (err, result2) => {
+                    if (err) {
+                        reject('Some Error Occurred in quiz: ' + err);
+                    } else {
+                        resolve(result2.insertId);
+                    }
+                });
+            } else {
+                resolve(null);
+            }
+        });
+
+        // Execute both promises
+        Promise.all([subjectivePromise, quizPromise])
+            .then(([subjective_id, quiz_id]) => {
+                const updatePromises = [];
+
+                // Add update for subjective_id if needed
+                if (subjective_id) {
+                    updatePromises.push(new Promise((resolve, reject) => {
+                        const sqlUpdate = "UPDATE `exam` SET `subjective_id` = ? WHERE `exam_id` = ?";
+                        db.query(sqlUpdate, [subjective_id, exam_id], (err) => {
+                            if (err) {
+                                reject('Some Error Occurred in subjective updation: ' + err);
+                            } else {
+                                resolve();
+                            }
+                        });
+                    }));
+                }
+
+                // Add update for quiz_id if needed
+                if (quiz_id) {
+                    updatePromises.push(new Promise((resolve, reject) => {
+                        const sqlUpdate = "UPDATE `exam` SET `quiz_id` = ? WHERE `exam_id` = ?";
+                        db.query(sqlUpdate, [quiz_id, exam_id], (err) => {
+                            if (err) {
+                                reject('Some Error Occurred in quiz updation: ' + err);
+                            } else {
+                                resolve();
+                            }
+                        });
+                    }));
+                }
+
+                // Execute all update promises and respond
+                return Promise.all(updatePromises).then(() => {
+                    return res.json({ exam_id, subjective_id, quiz_id });
+                });
+            })
+            .catch((error) => {
+                return res.json({ message: error });
+            });
+    });
+});
+
 
 app.post('/addQuizQuestions/:quiz_id', (req, res) => {
     const sql = "INSERT INTO `quiz_questions` (`quiz_id`, `question_title`, `option1`, `option2`, `option3`, `option4`, `answer`) VALUES ?";
@@ -514,9 +612,8 @@ app.post('/addQuizQuestions/:quiz_id', (req, res) => {
 });
 
 app.post('/addSubjectiveQuestions/:subjective_id', (req, res) => {
-    const sql = "INSERT INTO `subjective_questions` (`subjective_id`, `question_title`, `mark`) VALUES (?,?,?)";
-    
-    // Transform each question in `req.body` into an array of values
+    const sql = "INSERT INTO `subjective_questions` (`subjective_id`, `question_title`, `mark`) VALUES ?";
+
     const values = req.body.map(question => [
         req.params.subjective_id,
         question.question,
