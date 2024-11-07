@@ -513,7 +513,7 @@ app.post('/createExam', (req, res) => {
         // Promise for subjective insertion
         const subjectivePromise = new Promise((resolve, reject) => {
             if (req.body.subjective > 0) {
-                const sqlSubjective = "INSERT INTO `subjective` (`exam_id`, `no_of_questions`) VALUES (?,?)";
+                const sqlSubjective = "INSERT INTO `subjective` (`exam_id`, `sno_of_questions`) VALUES (?,?)";
                 const valuesSubjective = [exam_id, req.body.subjective];
                 db.query(sqlSubjective, valuesSubjective, (err, result1) => {
                     if (err) {
@@ -530,8 +530,8 @@ app.post('/createExam', (req, res) => {
         // Promise for quiz insertion
         const quizPromise = new Promise((resolve, reject) => {
             if (req.body.objective > 0) {
-                const sqlQuiz = "INSERT INTO `quiz` (`exam_id`, `no_of_questions`) VALUES (?,?)";
-                const valuesQuiz = [exam_id, req.body.objective];
+                const sqlQuiz = "INSERT INTO `quiz` (`exam_id`,`mark`, `qno_of_questions`) VALUES (?,?,?)";
+                const valuesQuiz = [exam_id,req.body.obj_mark, req.body.objective];
                 db.query(sqlQuiz, valuesQuiz, (err, result2) => {
                     if (err) {
                         reject('Some Error Occurred in quiz: ' + err);
@@ -573,6 +573,7 @@ app.post('/createExam', (req, res) => {
                             } else {
                                 resolve();
                             }
+                            
                         });
                     }));
                 }
@@ -629,4 +630,145 @@ app.post('/addSubjectiveQuestions/:subjective_id', (req, res) => {
     });
 });
 
+
+app.post('/fetchExams',(req,res)=>{
+    // sql ="select * from exam inner join subject on exam.subject_id = subject.subject_id inner join course on subject.course_id = course.course_id inner join quiz on quiz.quiz_id = exam.quiz_id inner join subjective on subjective.subjective_id = exam.subjective_id where subject.course_id = ? and subject.course_sem=?";
+    // sql = "SELECT * FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id INNER JOIN course ON subject.course_id = course.course_id LEFT JOIN quiz ON quiz.quiz_id = exam.quiz_id LEFT JOIN subjective ON subjective.subjective_id = exam.subjective_id WHERE subject.course_id = ? AND subject.course_sem = ?";
+    sql="SELECT exam.exam_id,exam.exam_name,exam.description,exam.subject_id,exam.quiz_id,exam.subjective_id,exam.starting_date,exam.ending_date,exam.duration,subject.subject_name,quiz.mark,quiz.qno_of_questions,subjective.sno_of_questions FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id INNER JOIN course ON subject.course_id = course.course_id LEFT JOIN quiz ON quiz.quiz_id = exam.quiz_id LEFT JOIN subjective ON subjective.subjective_id = exam.subjective_id WHERE subject.course_id = ? AND subject.course_sem = ?";
+    db.query(sql,[req.body.course_id,req.body.semester],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+app.post('/fetchQuizQuestions',(req,res)=>{
+    sql ="select * from quiz_questions where quiz_id=?";
+    db.query(sql,[req.body.quiz_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/attemptQuiz/:regno/:quiz_id/:quizMark/:exam_id', (req, res) => {
+    // const sql = "INSERT INTO `quiz_questions` (`quiz_id`. `question_title`, `option1`, `option2`, `option3`, `option4`, `answer`) VALUES ?";
+    // Transform each question in `req.body` into an array of value
+    const total = req.body.map(question => [
+        question.question_id,
+        question.answer,
+        question.correctanswer,
+    ]);
+    let correct=0,wrong=0;
+    total.forEach(question => {
+        if(question[1] === question[2])//question.answer === question.correctanswer
+            correct++;
+        else
+            wrong++
+      });
+      const totalMark=correct*req.params.quizMark;
+    const sql = "INSERT INTO `quiz_result` (`quiz_id`, `student_regno`, `correct_no`, `wrong_no`, `total_mark`) VALUES (?,?,?,?,?)";
+    const values = [
+        req.params.quiz_id,
+        req.params.regno,
+        correct,
+        wrong,
+        totalMark,
+    ]
+    // const values = [
+    //     [req.params.quiz_id, req.params.regno, correct, wrong, correct * req.params.quizMark]
+    // ];and edit VALUES (?);
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            console.log("Error inserting results:", err);
+            return res.json({ message: 'An error occurred: ' + err });
+        }
+        else{
+            const sql2 = "insert into exam_result (exam_id,student_regno,quiz_mark) values (?,?,?)";
+            const value2=[req.params.exam_id,req.params.regno,totalMark];
+            console.log(value2);
+            db.query(sql2,value2,(err,result)=>{
+                if(err)
+                    console.log("Error inserting to result")
+            })
+        }
+        return res.json({ message: 'Mark added successfully' });
+    });
+});
+
+app.post('/fetchSubjectiveQuestions',(req,res)=>{
+    sql ="select * from subjective_questions where subjective_id=?";
+    db.query(sql,[req.body.subjective_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/attemptSubjective/:regno/:subjective_id', (req, res) => {
+    const sql = "INSERT INTO `subjective_answer` (`question_id`, `student_regno`, `answer`,`mark`) VALUES ?";
+
+    const values = req.body.map(question => [
+        question.question_id,
+        req.params.regno,
+        question.answer,
+        0
+    ]);
+
+    db.query(sql, [values], (err, result) => {
+        if (err) {
+            console.log("Error inserting answers:", err);
+            return res.json({ message: 'An error occurred: ' + err });
+        }
+        else{
+            const sql2 = "insert into subjective_result (subjective_id,student_regno,total_mark) values (?,?,?)";
+            const value2=[req.params.subjective_id,req.params.regno,-1];
+            db.query(sql2,value2,(err,result)=>{
+                if(err)
+                    console.log("Error inserting to result")
+            })
+        }
+        
+        return res.json({ message: 'Answers added successfully' });
+    });
+});
+
+app.post('/getExams',(req,res)=>{
+    // sql ="select * from exam inner join subject on exam.subject_id = subject.subject_id inner join course on subject.course_id = course.course_id inner join quiz on quiz.quiz_id = exam.quiz_id inner join subjective on subjective.subjective_id = exam.subjective_id where subject.course_id = ? and subject.course_sem=?";
+    sql = "SELECT * FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id where exam.teacher_id =? ";
+    db.query(sql,[req.body.user_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/getQuizAttendees',(req,res)=>{
+
+    sql = "SELECT * FROM quiz_result inner join users on quiz_result.student_regno = users.user_regno where quiz_result.quiz_id=? ";
+    db.query(sql,[req.body.quiz_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/getSubjectiveAttendees',(req,res)=>{
+
+    sql = "SELECT * FROM subjective_result inner join users on subjective_result.student_regno = users.user_regno where subjective_result.subjective_id=? ";
+    db.query(sql,[req.body.subjective_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/getBothAttendees',(req,res)=>{
+
+    sql = "SELECT distinct users.user_name,users.user_regno,quiz_result.total_mark as qtotal,subjective_result.total_mark as stotal,exam.subjective_id,exam.exam_id FROM exam inner join quiz_result on quiz_result.quiz_id = exam.quiz_id inner join subjective_result on subjective_result.subjective_id=exam.subjective_id inner join users on quiz_result.student_regno=users.user_regno where exam.exam_id=?";
+    db.query(sql,[req.body.exam_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
 app.listen(5000)

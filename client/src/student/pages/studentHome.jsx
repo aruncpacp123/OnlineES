@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from 'react-router-dom'
+import ExamList from '../components/ExamList'
 
 export default function Home() {
     const navigate = useNavigate();
@@ -25,10 +26,10 @@ export default function Home() {
               <TabsContent value="exam">                 
                   <div className="flex  flex-col ">
                       <div className='text-right mr-5'>
-
+                        <ExamList />
                       </div>
                       <div className='mt-5 m-7'>
-                        
+
                       </div>
                   </div>
               </TabsContent>

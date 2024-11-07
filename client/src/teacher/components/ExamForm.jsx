@@ -25,6 +25,7 @@ export default function ExamForm() {
         duration:'',
         subjective:'',
         objective:'',
+        obj_mark:'',
         teacher:user_id
     })
 
@@ -141,13 +142,11 @@ export default function ExamForm() {
                         <Label htmlFor="duration" className="text-right col-span-1">
                            Duration
                         </Label>
-                        <Input id="duration" className="col-span-5" placeholder="Enter Exam Duration" type="number"
+                        <Input id="duration" className="col-span-2" placeholder="Enter Exam Duration in minutes" type="number"
                             value={formFields.duration}
                             onChange={(e)=>{setFormFields((current)=>({...current,duration:e.target.value}))}}
                         />
-                        <span className='absolute ml-[800px] '>Minutes</span>
-                    </div>
-                    <div className="grid grid-cols-6 ml-9 mr-9 items-center gap-4">
+                        {/* <span className='absolute ml-[800px] '>Minutes</span> */}
                         <Label htmlFor="subjective" className="text-right col-span-1">
                            Subjective Number
                         </Label>
@@ -160,6 +159,9 @@ export default function ExamForm() {
                             onChange={(e)=>{setFormFields((current)=>({...current,subjective:e.target.value}))}}
 
                         />
+                    </div>
+                    <div className="grid grid-cols-6 ml-9 mr-9 items-center gap-4">
+                        
                         <Label htmlFor="objective" className="text-right col-span-1">
                            Objective Number
                         </Label>
@@ -170,6 +172,17 @@ export default function ExamForm() {
                             type="number"
                             value={formFields.objective}
                             onChange={(e)=>{setFormFields((current)=>({...current,objective:e.target.value}))}}
+                        />
+                        <Label htmlFor="objective" className="text-right col-span-1">
+                           Objective Mark
+                        </Label>
+                        <Input
+                            id="objective"
+                            className="col-span-2" 
+                            placeholder="Enter Mark for each question"
+                            type="number"
+                            value={formFields.obj_mark}
+                            onChange={(e)=>{setFormFields((current)=>({...current,obj_mark:e.target.value}))}}
                         />
                     </div>
                 </div> 
