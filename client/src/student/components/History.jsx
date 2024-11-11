@@ -5,38 +5,31 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 export default function () {
     const usernames = JSON.parse(sessionStorage.getItem('username'));
+    const regno = usernames?.regno;
     const course_id = usernames.course;
     const semester = usernames.sem;
-
-    const [exam,setExam] = useState([]);
+    const [history,setHistory] = useState([]);
     const [loading,setLoading] = useState(true)
 
     const navigate = useNavigate();
 
-    const fetchExams= async ()=>{
+    const fetchHistory= async ()=>{
         try {
-            const res = await axios.post('http://localhost:5000/fetchExams',{course_id,semester});
+            const res = await axios.post('http://localhost:5000/fetchHistory',{regno});
             setTimeout(() => {
-                setExam(res.data);
+                setHistory(res.data);
                 setLoading(false);
-                console.log(exam)
-            }, 2000);
+    
+            }, 1000);
           } catch (err) {
-            console.error("Error fetching colleges:", err);
+            console.error("Error fetching history:", err);
           }
 
     };
 
-    const attempt =(quiz,subjective,qno,sno,mark,exam_id,duration) =>{
-        if(quiz!=null && quiz != 0)
-            navigate('/student/exam/quiz',{ state: { quiz_id:quiz,subjective_id:subjective,qno,sno,quizMark:mark,exam_id,duration} })
-        else
-            navigate('/student/exam/subjective',{ state: { subjective_id:subjective,sno,exam_id,quiz_id:quiz,duration} })
-
-    };
 
     useEffect(()=>{
-        fetchExams();
+        fetchHistory();
     },[loading]);
    return (
     <div>
@@ -47,26 +40,26 @@ export default function () {
                 <TableHead className="w-[100px]">No.</TableHead>
                 <TableHead className="w-[250px]">Name</TableHead>
                 <TableHead className="w-[250px]">Subject</TableHead>
-                <TableHead className="w-[500px]">Description</TableHead>
-                <TableHead className="w-[250px]">Date</TableHead>
-                <TableHead className="">Actions</TableHead>
+                <TableHead className="w-[250px]">Quiz Mark</TableHead>
+                <TableHead className="w-[250px]">Subjective Mark</TableHead>
+                <TableHead className="">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody >              
             {
                 loading?(<TableRow><TableCell colSpan="6" className="text-center font-mono font-extrabold">LOADING ......</TableCell></TableRow>):
                 (
-                exam.map((item,index)=>(
+                history.map((item,index)=>(
                 <TableRow key={index} className="text-left">
                   <TableCell className="font-medium">{index+1}</TableCell>
                   <TableCell>{item.exam_name}</TableCell>
                   <TableCell>{item.subject_name}</TableCell>
 
-                  <TableCell>{item.description}</TableCell>
-                  <TableCell>{item.starting_date}</TableCell>
-                  <TableCell className="text-right ">
-                    <Button className="bg-red-600 mr-12" onClick={(e)=>attempt(item.quiz_id,item.subjective_id,item.qno_of_questions,item.sno_of_questions,item.mark,item.exam_id,item.duration)}>Attempt</Button>
-                  </TableCell>
+                  <TableCell>{item.quiz_mark==-1?"Nill":item.quiz_mark}</TableCell>
+                  <TableCell>{item.subjective_mark==-1?"Not Corrected":(item.subjective_mark==-2?"Nill":item.subjective_mark)}</TableCell>
+                  <TableCell>{item.quiz_mark+item.subjective_mark}</TableCell>
+
+                 
                 </TableRow>
                 ))
                 )

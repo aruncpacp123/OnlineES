@@ -104,6 +104,7 @@ export default function Courses() {
     e.preventDefault();
     try 
     {
+      console.log(courseFields);
       const res = await axios.post('http://localhost:5000/addCourse',courseFields);
       console.log(res)
       fetchCourses();
@@ -196,14 +197,14 @@ export default function Courses() {
                           <Label htmlFor="department" className="text-right">
                             Department
                           </Label>
-                          <Select id="department" className="col-span-3" onValueChange={(value)=>{setCourseFields((current)=>({...current,dept_name:value}))}} >
+                          <Select id="department" className="col-span-3" onValueChange={(value)=>{setCourseFields((current)=>({...current,dept_name:parseInt(value,10)}))}} >
                             <SelectTrigger id="department" className="col-span-3" >
                             <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent position="popper">
                             {
                                 departments.map((items,index)=>(
-                                <SelectItem value={items.dept_name} key={index}>{items.dept_name}</SelectItem>
+                                <SelectItem value={String(items.dept_id)} key={index}>{items.dept_name}</SelectItem>
                                 ))
                             }
                             </SelectContent>

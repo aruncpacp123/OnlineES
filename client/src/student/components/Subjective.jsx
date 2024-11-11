@@ -13,8 +13,13 @@ export default function Quiz() {
   const location = useLocation();
   const navigate = useNavigate();
   const subjective_id = location.state?.subjective_id;
+
   const sno = location.state?.sno;
   const exam_id = location.state?.exam_id;
+  const quiz_id = location.state?.quiz_id;
+  const duration = location.state?.duration;
+
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: duration, seconds: 0 });
 
 
   const usernames = JSON.parse(sessionStorage.getItem('username'));
@@ -34,7 +39,7 @@ export default function Quiz() {
       const submit = async (e) => {
         e.preventDefault();
         try {
-        const res = await axios.post(`http://localhost:5000/attemptSubjective/${regno}/${subjective_id}`, formFields);
+        const res = await axios.post(`http://localhost:5000/attemptSubjective/${regno}/${subjective_id}/${quiz_id}/${exam_id}`, formFields);
 
             navigate('/student');
           console.log(res.data);
@@ -42,7 +47,7 @@ export default function Quiz() {
           console.log(err);
         }
       };
-    
+
       const fetchSubjective = async () => {
         try {
           const res = await axios.post('http://localhost:5000/fetchSubjectiveQuestions', { subjective_id });
@@ -68,11 +73,36 @@ export default function Quiz() {
           setFormFields(initialFields);
         }
       }, [subjectiveQuestions, loading]);
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setTimeLeft((prevTime) => {
+            const { hours, minutes, seconds } = prevTime;
+            if (hours === 0 && minutes === 0 && seconds === 0) {
+              clearInterval(timer);
+              submit(new Event('submit')); // Automatically submit form when timer ends
+              return prevTime;
+            }
+    
+            if (seconds > 0) {
+              return { ...prevTime, seconds: seconds - 1 };
+            } else if (minutes > 0) {
+              return { hours, minutes: minutes - 1, seconds: 59 };
+            } else if (hours > 0) {
+              return { hours: hours - 1, minutes: 59, seconds: 59 };
+            }
+            return prevTime;
+          });
+        }, 1000);
+    
+        return () => clearInterval(timer); // Cleanup interval on component unmount
+      }, []);
   return (
     <>
         <div className="grid grid-cols-9 ">
             <div className="flex items-center justify-center col-span-2 bg-slate-200 md:min-h-screen">
-                hello
+            <div className="text-3xl">
+            {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
+          </div>
             </div>
             <div className="flex items-center justify-center col-span-5 bg-slate-100">
                 <form onSubmit={submit}>

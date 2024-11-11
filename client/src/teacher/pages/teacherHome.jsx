@@ -4,6 +4,9 @@ import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
 import { useNavigate } from 'react-router-dom'
 import ExamList from '../components/ExamList'
 import ExamForm from '../components/ExamForm'
+import { Student } from '../components/Student'
+import { Subjects } from '../components/Subjects'
+import { Profile } from '../components/profile'
 
 export default function Home() {
   
@@ -14,14 +17,16 @@ export default function Home() {
         <Navbar />
         <div className="flex border-t-4 border-t-slate-800">
             <Tabs defaultValue="exam" className="min-w-full ">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="exam">Exam</TabsTrigger>
-                <TabsTrigger value="history">History</TabsTrigger>
+                {/* <TabsTrigger value="history">History</TabsTrigger> */}
 
                 <TabsTrigger value="student">Students</TabsTrigger>
 
                 <TabsTrigger value="subject">Subjects</TabsTrigger>
-                <TabsTrigger value="more">More</TabsTrigger>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+
+                {/* <TabsTrigger value="more">More</TabsTrigger> */}
 
               </TabsList>
               <TabsContent value="exam">                 
@@ -33,6 +38,15 @@ export default function Home() {
                         <ExamList />
                       </div>
                   </div>
+              </TabsContent>
+              <TabsContent value="student">
+                <Student />
+              </TabsContent>
+              <TabsContent value="subject">
+                <Subjects />
+              </TabsContent>
+              <TabsContent value="profile">
+                <Profile />
               </TabsContent>
             </Tabs>
         </div>

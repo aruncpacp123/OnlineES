@@ -170,7 +170,9 @@ export default function Quiz() {
   const sno = location.state?.sno;
   const quizMark = location.state?.quizMark;
   const exam_id = location.state?.exam_id;
-  
+  const duration = location.state?.duration;
+
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: duration, seconds: 0 });
 
   const usernames = JSON.parse(sessionStorage.getItem('username'));
   const regno = usernames.regno;
@@ -190,7 +192,7 @@ export default function Quiz() {
     try {
     const res = await axios.post(`http://localhost:5000/attemptQuiz/${regno}/${quiz_id}/${quizMark}/${exam_id}`, formFields);
       if (subjective_id) {
-        navigate('/student/exam/subjective',{ state: { subjective_id,sno,exam_id} })
+        navigate('/student/exam/subjective',{ state: { subjective_id,sno,exam_id,quiz_id,duration} })
       } else {
         navigate('/student');
       }
@@ -227,11 +229,38 @@ export default function Quiz() {
     }
   }, [quizQuestions, loading]);
 
+  // Timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        const { hours, minutes, seconds } = prevTime;
+        if (hours === 0 && minutes === 0 && seconds === 0) {
+          clearInterval(timer);
+          submit(new Event('submit')); // Automatically submit form when timer ends
+          return prevTime;
+        }
+
+        if (seconds > 0) {
+          return { ...prevTime, seconds: seconds - 1 };
+        } else if (minutes > 0) {
+          return { hours, minutes: minutes - 1, seconds: 59 };
+        } else if (hours > 0) {
+          return { hours: hours - 1, minutes: 59, seconds: 59 };
+        }
+        return prevTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer); // Cleanup interval on component unmount
+  }, []);
+
   return (
     <>
       <div className="grid grid-cols-9 ">
         <div className="flex items-center justify-center col-span-2 bg-slate-200 md:min-h-screen">
-          hello
+        <div className="text-3xl">
+            {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
+          </div>
         </div>
         <div className="flex items-center justify-center col-span-5 bg-slate-100">
           <form onSubmit={submit} className='text-center'>

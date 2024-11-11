@@ -11,6 +11,7 @@ import image from "../../assets/react.svg"
 import show from "../../assets/eye_open.svg"
 import hide from "../../assets/eye_hide.svg"
 import eye from "../../assets/eye.svg"
+import { useNavigate } from 'react-router-dom'
 
 export default function InstRegister2({value}) {
     const [formFields,setFormFields] =useState({
@@ -23,6 +24,7 @@ export default function InstRegister2({value}) {
         dob:'',
         inst_id:value.id,
       })
+      const navigate = useNavigate();
       const isDisabled = !formFields.name || !formFields.email || !formFields.regno || !formFields.phone || !formFields.password || !formFields.gender || !formFields.dob;
       const gender = ["Male","Female","Others"];
       const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +36,7 @@ export default function InstRegister2({value}) {
         try{
           const res = await axios.post('http://localhost:5000/addInstAdmin',formFields);
           alert("Admin Created Successfully");
+          navigate('/')
           console.log(res);
         }
         catch(err){

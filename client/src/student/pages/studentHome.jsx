@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from 'react-router-dom'
 import ExamList from '../components/ExamList'
+import { Profile } from '../components/profile'
+import History from '../components/history'
 
 export default function Home() {
     const navigate = useNavigate();
@@ -19,7 +21,7 @@ export default function Home() {
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="exam">Exam</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
-                <TabsTrigger value="student">Profile</TabsTrigger>
+                <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="more">More</TabsTrigger>
 
               </TabsList>
@@ -32,6 +34,18 @@ export default function Home() {
 
                       </div>
                   </div>
+              </TabsContent>
+              <TabsContent value="profile">
+                <div className='flex justify-center items-center'>
+                    <Profile />
+
+                </div>
+              </TabsContent>
+              <TabsContent value="history">
+                <div className='flex justify-center items-center'>
+                    <History />
+
+                </div>
               </TabsContent>
             </Tabs>
         </div>

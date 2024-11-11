@@ -13,6 +13,7 @@ import QuizForm from './teacher/components/quizForm';
 import SubjectiveForm from './teacher/components/SubjectiveForm';
 import Quiz from './student/components/Quiz';
 import Subjective from './student/components/Subjective';
+import { Profile } from './teacher/components/profile';
 function App() {
   return(
     <UserProvider>{/*Also include Priavte routing */}
@@ -34,6 +35,8 @@ function App() {
               <Route path='/teacher/exam' element={<ExamForm/>} />
               <Route path='/teacher/exam/step1' element={<QuizForm />} />
               <Route path='/teacher/exam/step2' element={<SubjectiveForm />} />
+              <Route path='/profile' element={<Profile />} />
+
 
               {/* Student Paths */}
               <Route path='/student' element={<StudentHome />} />

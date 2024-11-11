@@ -9,6 +9,8 @@ export default function({details}) {
 
     const [exam,setExam] = useState([]);
     const [loading,setLoading] = useState(true);
+    const [loading2,setLoading2] = useState(true);
+
 
     const exam_id = details.exam_id;
     const quiz_id = details.quiz_id;
@@ -22,12 +24,15 @@ export default function({details}) {
     const [more,setMore] = useState(false);
     const [answer,setAnswer] = useState('');
 
+    const [marks, setMarks] = useState({});
     const navigate = useNavigate();
 
     const viewAnswer =(examDetails) =>{
         setList(false);
         setMore(true);
         setAnswer(examDetails);
+
+        // document.getElementById('inner').innerHTML=`<ViewAnswers />`;
     };
 
     const fetchQuizAttendees= async ()=>{
@@ -54,24 +59,59 @@ export default function({details}) {
             console.error("Error fetching colleges:", err);
           }
     };
-    const fetchBothAttendees= async ()=>{
+    const fetchBothAttendeess= async ()=>{
         try {
             console.log(details)
-            const res = await axios.post('http://localhost:5000/getBothAttendees',{exam_id});
+            const res = await axios.post('http://localhost:5000/getBoth',{exam_id});
             setTimeout(() => {
-                setExam(res.data);
+                setExam(res.data.attendees);
+                setMarks(res.data.marks);
                 setLoading(false);
+                // console.log(res.data)
             }, 2000);
+          } catch (err) {
+            console.error("Error fetching marks:", err);
+          }
+    };
+    const fetchMark= async (sub_id,regno)=>{
+        try {
+            console.log(sub_id,regno)
+            const res = await axios.post('http://localhost:5000/getMark',{sub_id,regno});
+            console.log(res.data)
+            setTimeout(() => {
+                setLoading2(false);
+            }, 2000);
+            return res.data.mark;
           } catch (err) {
             console.error("Error fetching colleges:", err);
           }
     };
+    const fetchBothAttendees = async () => {
+        try {
+            const res = await axios.post('http://localhost:5000/getBothAttendees', { exam_id });
+            setExam(res.data);
+            setLoading(false);
 
-
+            // Fetch marks for each attendee
+            const markPromises = res.data.map(async item => {
+                const response = await axios.post('http://localhost:5000/getMark', {
+                    sub_id: item.subjective_id,
+                    regno: item.user_regno
+                });
+                const dat = response.data?.total_mark
+                return { [item.user_regno]: dat };
+            });
+            
+            const markResults = await Promise.all(markPromises);
+            setMarks(markResults.reduce((acc, curr) => ({ ...acc, ...curr }), {}));
+        } catch (err) {
+            console.error("Error fetching attendees or marks:", err);
+        }
+    };
     useEffect(()=>{
         if(quiz_id !=0 && subjective_id !=0){
             setBoth(true);
-            fetchBothAttendees();
+            fetchBothAttendeess();
         }
         else if(quiz_id !=0){
             setQuiz(true);
@@ -81,7 +121,6 @@ export default function({details}) {
             setSub(true);
             fetchSubjectiveAttendees();
         }
-       
     },[loading,answer]);
 
       
@@ -135,7 +174,7 @@ export default function({details}) {
                   <TableCell>{item.user_name}</TableCell>
                   <TableCell>{item.total_mark==-1?"not corrected":item.total_mark}</TableCell>
                   <TableCell className="text-right ">
-                    <Button className="bg-green-600 mr-12" onClick={(e)=>viewAnswer()}> View Answers </Button>
+                    <Button className="bg-green-600 mr-12" onClick={(e)=>{viewAnswer(item)}}> View Answers </Button>
                   </TableCell>
                 </TableRow>
                 ))
@@ -144,7 +183,7 @@ export default function({details}) {
             </TableBody>
         </Table>
         }
-        {both && list &&
+        {both && list && marks &&
         
         <Table className="">
             <TableCaption>A list of Exams.</TableCaption>
@@ -167,10 +206,11 @@ export default function({details}) {
                   <TableCell className="font-medium">{index+1}</TableCell>
                   <TableCell>{item.user_name}</TableCell>
                   <TableCell>{item.qtotal}</TableCell>
-                  <TableCell>{item.stotal==-1?"Not corrected":item.stotal}</TableCell>
-
+                  {/* <TableCell>{item.stotal==-1?"Not corrected":item.stotal}</TableCell> */}
+                  <TableCell>{marks[item.user_regno]==-1 ?"Not Corrected":marks[item.user_regno]}</TableCell>
+                   {console.log(marks)}
                   <TableCell className="text-right ">
-                    <Button className="bg-green-600 mr-12" onClick={(e)=>{setAnswer(item);viewAnswer(item)}}> View Answers </Button>
+                    <Button className="bg-green-600 mr-12" onClick={(e)=>{viewAnswer(item)}}> View Answers </Button>
                   </TableCell>
                 </TableRow>
                 ))
@@ -179,7 +219,7 @@ export default function({details}) {
             </TableBody>
         </Table>
         }
-        {more && answer && <ViewAnswers />}
+        {more && answer && <ViewAnswers answer={answer}/>}
     </div>
   )
 }

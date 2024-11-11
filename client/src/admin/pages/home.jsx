@@ -21,6 +21,9 @@ import Departments from '../components/departments'
 import Courses from '../components/courses'
 import { useNavigate } from 'react-router-dom'
 import Subjects from '../components/subjects'
+import { Student } from '../components/student'
+import { TeacherList } from '../components/TeacherList'
+import Exam from '../components/Exam'
 export default function Home() {
     const navigate = useNavigate();
   return (
@@ -28,17 +31,26 @@ export default function Home() {
         <Navbar />
         <div className="flex border-t-4 border-t-slate-800">
             <Tabs defaultValue="exam" className="min-w-full ">
-              <TabsList className="grid w-full grid-cols-8">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="exam">Exam</TabsTrigger>
                 <TabsTrigger value="student">Students</TabsTrigger>
                 <TabsTrigger value="teacher">Teachers</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>  
+                {/* <TabsTrigger value="pending">Pending</TabsTrigger>   */}
                 <TabsTrigger value="department">Departments</TabsTrigger>
                 <TabsTrigger value="course">Courses</TabsTrigger>
                 <TabsTrigger value="subject">Subjects</TabsTrigger>
-                <TabsTrigger value="more">More</TabsTrigger>
-
+                {/* <TabsTrigger value="more">More</TabsTrigger> */}
               </TabsList>
+              <TabsContent value="exam">
+                <Exam />
+              </TabsContent>
+              <TabsContent value="student">
+                <Student />
+              </TabsContent>
+              <TabsContent value="teacher">
+                <TeacherList />
+              </TabsContent>
+            
               <TabsContent value="department">
                 <Departments />
               </TabsContent>
