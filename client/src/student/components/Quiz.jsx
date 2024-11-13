@@ -258,7 +258,7 @@ export default function Quiz() {
     <>
       <div className="grid grid-cols-9 ">
         <div className="flex items-center justify-center col-span-2 bg-slate-200 md:min-h-screen">
-        <div className="text-3xl">
+        <div className="text-3xl border-b-2">
             {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function Quiz() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="space-y-1 text-left">
-                    <Label htmlFor={`question-${currentQuestionIndex}`} className="mb-9">Question</Label>
+                    <Label htmlFor={`question-${currentQuestionIndex}`} className="mb-9"></Label>
                     <Textarea
                       id={`question-${currentQuestionIndex}`}
                       value={quizQuestions[currentQuestionIndex]?.question_title || ""}
@@ -315,8 +315,7 @@ export default function Quiz() {
                     onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
                     value="next"
 
-                  />
-                    
+                  />        
                 
                 </CardFooter>
               </Card>

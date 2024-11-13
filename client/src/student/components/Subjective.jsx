@@ -128,6 +128,7 @@ export default function Quiz() {
                             <Textarea
                               id={`answer-${index}`}
                               value={formFields[index].answer}
+                              placeholder="Type your answer here"
                               className="mt-6"
                               onChange={(e)=>handleInputChange(index,"answer",e.target.value)}
                               />

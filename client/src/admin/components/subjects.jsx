@@ -221,7 +221,7 @@ const fetchTeachers= async (sub_id)=>{
                               <TableCell className="text-right ">
                                 <Assign sub_id={item.subject_id} dept_id={item.dept_id} sub_name={item.subject_name} />
                                 
-                                <Button className="bg-blue-600 mr-6" onClick={(e)=>deleteSubject(item.course_id)}>Edit</Button>
+                                {/* <Button className="bg-blue-600 mr-6" >Edit</Button> */}
                                 
                                 <Button className="bg-red-600 mr-6" onClick={(e)=>deleteSubject(item.subject_id)}>Delete</Button>
                               </TableCell>
