@@ -144,3 +144,48 @@ cd server
 npm run dev
 
 -->
+<!--
+Project Overview: The Online Examination System (OES) is built using the MySQL (M) and MERN stack. The project is developed to efficiently conduct exams in an institution, focusing on three roles: Institution Admin, Teacher, and Student. A System Admin role is planned for future development but is not yet implemented due to time restrictions.
+
+Key Features:
+
+Institution Registration: Institutions can register and create an admin.
+Role-Based Access Control (RBAC): Institution Admins can manage departments, courses, subjects, students, teachers, and view exams.
+Teacher Role: Teachers can register under their institution and create both subjective and objective (Quiz) exams. Quizzes are auto-graded, while subjective questions are manually graded by teachers after the exam.
+Student Role: Students can register under an institution, view and attempt assigned exams. Quiz results are available immediately, while subjective questions are graded by teachers.
+Professional Dashboard (Future): A dashboard for result analysis and feature insights for all users.
+Proctoring System (Future): A camera-based proctoring system to detect malpractice and plagiarism.
+AI-Based Malpractice Detection (Future): AI-driven algorithms to identify malpractice during the exam.
+Authentication & Security:
+
+Secure Login System: Only authenticated users can access the system, with role-based access to specific resources.
+OAuth (Planned): OAuth integration is planned for future use.
+Password Hashing: Bcrypt is used for securely hashing passwords.
+Private Routing & Conditional Rendering: React.js is used for private routing, and unauthorized users are redirected to the login page.
+Instructions for Running the Project:
+
+Prerequisites: Ensure Node.js and MySQL are installed.
+Database Setup: Import the SQL file from client/src/config to set up the MySQL database.
+Project Setup:
+Create a Vite React project using npm create vite@latest.
+Follow the instructions to set up the project.
+Clone the repository into the created project.
+Running the Project:
+Open two terminals:
+In the first terminal, navigate to the client directory and run npm run dev.
+In the second terminal, navigate to the server directory and run npm run dev.
+Key Code Locations:
+
+Password Hashing: Implemented in server/server.js starting from line 49.
+RBAC: Implemented in App.jsx and PrivateRoute.js in client/src/.
+Login Navigation: Handled in client/src/login/pages/SignIn.jsx.
+Future Enhancements:
+
+Professional Dashboard: A dashboard for result analysis and feature insights for all users.
+Proctoring System: A proctoring system to monitor exams and ensure fair play.
+Camera Access for Exam Proctoring: Camera access during the exam to detect any malpractice or plagiarism.
+Full-Screen Mode: Enforcing full-screen mode during the exam to prevent cheating.
+AI-Based Malpractice Detection: Implementation of AI algorithms to detect any malpractice or plagiarism during the exam.
+Let me know if you need further changes or details!
+
+-->
