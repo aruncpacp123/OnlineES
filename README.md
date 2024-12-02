@@ -101,7 +101,7 @@ An online examination system built using the M(MySQL)ERN stack, designed to effi
 This project is part of my academic requirements and is not open for external contributions at this time.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](Readme.md/#teacher) file for details.
 
 <!--
 My Project is an online examination system Build using M(MySql)ERN Stack. The project is developed to conduct exams in an institution efficiently. There are basically three roles Institution Admin, Teacher and Student and there will be System Admin role for managing entire project  and that role is currently under development(Not developed yet due to time restrictions ) .This is done as part of my academics(Individual Project). An institution can register in it and create an admin. Institution's admin can add departments, courses, subjects, manage students and teachers and able to see the exams. Teacher register on site under their institution and can create exams both subjective type and objective(Quiz) type Questions. Quiz is auto correct and  subjective type questions is manually corrected by teacher after student attempts the exam. Teacher can view all students details and marks.
