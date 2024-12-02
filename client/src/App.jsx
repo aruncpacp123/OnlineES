@@ -11,7 +11,7 @@ import SubjectiveForm from "./teacher/components/SubjectiveForm";
 import Quiz from "./student/components/Quiz";
 import Subjective from "./student/components/Subjective";
 import { Profile } from "./teacher/components/profile";
-import PrivateRoute from "./PrivateRoute"; // Import the modified PrivateRoute
+import PrivateRoute from "./PrivateRoute"; // Import the updated PrivateRoute
 
 function App() {
   return (
@@ -23,19 +23,21 @@ function App() {
         <Route path="/register" element={<SignUp />} />
         <Route path="/Instregister" element={<Institution />} />
 
-        {/* Private Routes */}
+        {/* Private Routes for Admin */}
         <Route
           path="/admin"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["admin"]}>
               <Home />
             </PrivateRoute>
           }
         />
+
+        {/* Private Routes for Teacher */}
         <Route
           path="/teacher"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["teacher"]}>
               <TeacherHome />
             </PrivateRoute>
           }
@@ -43,7 +45,7 @@ function App() {
         <Route
           path="/teacher/exam"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["teacher"]}>
               <ExamForm />
             </PrivateRoute>
           }
@@ -51,7 +53,7 @@ function App() {
         <Route
           path="/teacher/exam/step1"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["teacher"]}>
               <QuizForm />
             </PrivateRoute>
           }
@@ -59,7 +61,7 @@ function App() {
         <Route
           path="/teacher/exam/step2"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["teacher"]}>
               <SubjectiveForm />
             </PrivateRoute>
           }
@@ -67,15 +69,17 @@ function App() {
         <Route
           path="/profile"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["teacher", "admin"]}>
               <Profile />
             </PrivateRoute>
           }
         />
+
+        {/* Private Routes for Student */}
         <Route
           path="/student"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["student"]}>
               <StudentHome />
             </PrivateRoute>
           }
@@ -83,7 +87,7 @@ function App() {
         <Route
           path="/student/exam/quiz"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["student"]}>
               <Quiz />
             </PrivateRoute>
           }
@@ -91,7 +95,7 @@ function App() {
         <Route
           path="/student/exam/subjective"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={["student"]}>
               <Subjective />
             </PrivateRoute>
           }
