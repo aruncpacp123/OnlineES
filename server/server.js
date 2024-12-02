@@ -1,6 +1,7 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -21,7 +22,6 @@ db.connect((err) => {
     }
     console.log('Database connected successfully!');
   });
-
 app.get('/users',(req,res)=>{
     const sql="select * from user";
     db.query(sql,(err,data)=>{
@@ -29,6 +29,8 @@ app.get('/users',(req,res)=>{
         return res.json(data);
     })
 })
+
+
 
 app.post('/addInstitution',(req,res)=>{   
     sql = "INSERT INTO `institution` (`inst_name`, `inst_email`, `inst_address`, `inst_phno`) VALUES (?,?,?,?)"
@@ -43,70 +45,143 @@ app.post('/addInstitution',(req,res)=>{
         return res.json({ id: result.insertId,name:req.body.name })
     })
 })
+// Add Institution Admin with Password Hashing
+app.post('/addInstAdmin', async (req, res) => {
+    try {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10); // Hash the password with a salt round of 10
 
-app.post('/addInstAdmin',(req,res)=>{   
-    // res.json({message:req.body.inst_id})
-    sql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
-    const values = [
-        req.body.name,
-        req.body.email,
-        req.body.regno,
-        req.body.phone,
-        req.body.password,
-        req.body.gender,
-        req.body.dob,
-        "admin",
-        req.body.inst_id
-    ]
-    db.query(sql,values,(err,result)=>{
-        if(err) return res.json({message:'Something has Occured' + err})
-        return res.json({ id: result.insertId, message: 'Admin added successfully' })
-    })
-})
-
-app.post('/login', (req, res) => {
-    if(req.body.type === "admin"){
-        var values = [
+        const sql = "INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
+        const values = [
+            req.body.name,
             req.body.email,
-            req.body.password,
-            req.body.type,
-            parseInt(req.body.institution)
-        ]
-        var sql = "select * from users where user_email = ? and user_password = ? and user_type =? and  inst_id = ?";
-        //var sql = `SELECT * FROM users WHERE user_email = ? AND user_password = ? AND user_type = ? AND inst_id = (SELECT inst_id FROM institution WHERE inst_name = ?)`;
-    }
-    else if(req.body.type === "student"){
-        var values = [
             req.body.regno,
-            req.body.password,
-            req.body.type
-        ]
-        var sql = "select * from users inner join student on users.user_id = student.student_id where user_regno = ? and user_password = ? and user_type= ?";
+            req.body.phone,
+            hashedPassword, // Use the hashed password here
+            req.body.gender,
+            req.body.dob,
+            "admin",
+            req.body.inst_id
+        ];
+
+        db.query(sql, values, (err, result) => {
+            if (err) return res.json({ message: 'Something has occurred: ' + err });
+            return res.json({ id: result.insertId, message: 'Admin added successfully' });
+        });
+    } catch (error) {
+        res.json({ message: 'Error hashing password: ' + error });
     }
-    else if(req.body.type === "teacher"){
-        var values = [
+});
+
+// Login with Password Verification
+app.post('/login', async (req, res) => {
+    let sql, values;
+
+    if (req.body.type === "admin") {
+        values = [
             req.body.email,
-            req.body.password,
             req.body.type,
             parseInt(req.body.institution)
-        ]
-        var sql = "select * from users inner join teacher on users.user_id = teacher.teacher_id where user_email = ? and user_password = ? and user_type= ?";
+        ];
+        sql = "SELECT * FROM users WHERE user_email = ? AND user_type = ? AND inst_id = ?";
+    } else if (req.body.type === "student") {
+        values = [
+            req.body.regno,
+            req.body.type
+        ];
+        sql = "SELECT * FROM users INNER JOIN student ON users.user_id = student.student_id WHERE user_regno = ? AND user_type = ?";
+    } else if (req.body.type === "teacher") {
+        values = [
+            req.body.email,
+            req.body.type,
+            parseInt(req.body.institution)
+        ];
+        sql = "SELECT * FROM users INNER JOIN teacher ON users.user_id = teacher.teacher_id WHERE user_email = ? AND user_type = ?";
     }
-    db.query(sql,values, (err, result) => {
+
+    db.query(sql, values, async (err, result) => {
         if (err) {
             console.error("Database Error:", err);
-            return res.json({ message: 'Some Error Occurred: ' + err });
+            return res.json({ message: 'Some error occurred: ' + err });
         }
-        
-        if (result.length > 0) {
-            // return res.json({ id: result[0].user_id ,name:result[0].user_name,email:result[0].user_email,regno:result[0].user_regno,inst_id:result[0].inst_id});
-            return res.json(result[0]);
 
+        if (result.length > 0) {
+            const user = result[0];
+            // Compare the provided password with the hashed password stored in the database
+            const isPasswordMatch = await bcrypt.compare(req.body.password, user.user_password);
+
+            if (isPasswordMatch) {
+                return res.json(user);
+            } else {
+                return res.json({ message: 'Invalid credentials' });
+            }
         } else {
-            return res.json({ message: 'Invalid credentials or user not found'});
+            return res.json({ message: 'Invalid credentials or user not found' });
         }
     });
 });
+
+// app.post('/addInstAdmin',(req,res)=>{   
+//     // res.json({message:req.body.inst_id})
+//     sql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
+//     const values = [
+//         req.body.name,
+//         req.body.email,
+//         req.body.regno,
+//         req.body.phone,
+//         req.body.password,
+//         req.body.gender,
+//         req.body.dob,
+//         "admin",
+//         req.body.inst_id
+//     ]
+//     db.query(sql,values,(err,result)=>{
+//         if(err) return res.json({message:'Something has Occured' + err})
+//         return res.json({ id: result.insertId, message: 'Admin added successfully' })
+//     })
+// })
+// app.post('/login', (req, res) => {
+//     if(req.body.type === "admin"){
+//         var values = [
+//             req.body.email,
+//             req.body.password,
+//             req.body.type,
+//             parseInt(req.body.institution)
+//         ]
+//         var sql = "select * from users where user_email = ? and user_password = ? and user_type =? and  inst_id = ?";
+//         //var sql = `SELECT * FROM users WHERE user_email = ? AND user_password = ? AND user_type = ? AND inst_id = (SELECT inst_id FROM institution WHERE inst_name = ?)`;
+//     }
+//     else if(req.body.type === "student"){
+//         var values = [
+//             req.body.regno,
+//             req.body.password,
+//             req.body.type
+//         ]
+//         var sql = "select * from users inner join student on users.user_id = student.student_id where user_regno = ? and user_password = ? and user_type= ?";
+//     }
+//     else if(req.body.type === "teacher"){
+//         var values = [
+//             req.body.email,
+//             req.body.password,
+//             req.body.type,
+//             parseInt(req.body.institution)
+//         ]
+//         var sql = "select * from users inner join teacher on users.user_id = teacher.teacher_id where user_email = ? and user_password = ? and user_type= ?";
+//     }
+//     db.query(sql,values, (err, result) => {
+//         if (err) {
+//             console.error("Database Error:", err);
+//             return res.json({ message: 'Some Error Occurred: ' + err });
+//         }
+        
+//         if (result.length > 0) {
+//             // return res.json({ id: result[0].user_id ,name:result[0].user_name,email:result[0].user_email,regno:result[0].user_regno,inst_id:result[0].inst_id});
+//             return res.json(result[0]);
+
+//         } else {
+//             return res.json({ message: 'Invalid credentials or user not found'});
+//         }
+//     });
+// });
 
 app.get('/getCollege',(req,res)=>{
     sql="select inst_id,inst_name from institution";
@@ -216,6 +291,7 @@ app.post('/fetchCourses',(req,res)=>{
 })
 
 app.post('/addStudent', (req, res) => { 
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
     const values = [
@@ -223,7 +299,7 @@ app.post('/addStudent', (req, res) => {
         req.body.email,
         req.body.regno,
         req.body.phone,
-        req.body.password,
+        hashedPassword,
         req.body.gender,
         req.body.dob,
         "student",
@@ -252,6 +328,7 @@ app.post('/addStudent', (req, res) => {
 });
 
 app.post('/addTeacher', (req, res) => { 
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
     const values = [
@@ -259,7 +336,7 @@ app.post('/addTeacher', (req, res) => {
         req.body.email,
         req.body.regno,
         req.body.phone,
-        req.body.password,
+        hashedPassword,
         req.body.gender,
         req.body.dob,
         "teacher",
