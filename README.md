@@ -22,6 +22,10 @@ An online examination system built using the M(MySQL)ERN stack, designed to effi
 
 ### Future Enhancements
 - A professional dashboard for result analysis and feature insights for all users.
+- A proctoring system
+- Camera is accessed through the exam and detect any malpractice or plagiarisms
+- full screen mode
+- Disable copy/paste
 
 ## Security Features
 
