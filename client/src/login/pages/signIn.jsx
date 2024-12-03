@@ -56,7 +56,7 @@ function SignIn() {
   const loginAll = async (userType, e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/Login', {
+      const res = await axios.post('Login', {
         regno,
         email,
         password,

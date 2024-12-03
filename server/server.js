@@ -48,7 +48,7 @@ app.post('/addInstitution',(req,res)=>{
 // Add Institution Admin with Password Hashing
 app.post('/addInstAdmin', async (req, res) => {
     try {
-        const hashedPassword = bcrypt.hash(req.body.password, 10); // Hash the password with a salt round of 10
+        const hashedPassword = await bcrypt.hash(req.body.password, 10); // Hash the password with a salt round of 10
 
         const sql = "INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
         const values = [
@@ -290,7 +290,7 @@ app.post('/fetchCourses',(req,res)=>{
     })
 })
 
-app.post('/addStudent', (req, res) => { 
+app.post('/addStudent', async (req, res) => { 
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
@@ -327,7 +327,7 @@ app.post('/addStudent', (req, res) => {
     });
 });
 
-app.post('/addTeacher', (req, res) => { 
+app.post('/addTeacher', async (req, res) => { 
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
