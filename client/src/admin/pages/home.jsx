@@ -1,4 +1,4 @@
-import React from 'react'
+import React,{useEffect} from 'react'
 import Navbar from '../components/navbar'
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +25,22 @@ import { Student } from '../components/student'
 import { TeacherList } from '../components/TeacherList'
 import Exam from '../components/Exam'
 export default function Home() {
+
     const navigate = useNavigate();
+    const isAuthenticated = JSON.parse(sessionStorage.getItem("username"));
+    const userRole = isAuthenticated ? isAuthenticated.userRole :"no" // Example: Replace with your actual logic
+    useEffect(()=>{
+      if (userRole === "admin") {
+        console.log("first")
+    }else{
+      const logout = ()=>{
+        // sessionStorage.removeItem("username");
+        navigate('/')
+    }
+    logout();
+    
+    }
+    },[]);
   return (
     <div>
         <Navbar />

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState ,useEffect} from 'react'
 import Navbar from '../components/navbar'
 import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from "@/components/ui/dialog"
 import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
@@ -12,7 +12,20 @@ import History from '../components/history'
 
 export default function Home() {
     const navigate = useNavigate();
-
+    const isAuthenticated = JSON.parse(sessionStorage.getItem("username"));
+    const userRole = isAuthenticated ? isAuthenticated.userRole :"no" // Example: Replace with your actual logic
+    useEffect(()=>{
+      if (userRole === "student") {
+        console.log("first")
+    }else{
+      const logout = ()=>{
+        // sessionStorage.removeItem("username");
+        navigate('/')
+    }
+    logout();
+    
+    }
+    },[]);
   return (
     <div>
         <Navbar />

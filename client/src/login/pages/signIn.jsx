@@ -26,7 +26,7 @@ function SignIn() {
   const [id, setId] = useState("");
   // const { setUser } = useUser();
   const navigate = useNavigate();
-  const { login } = useContext(UserContext);
+  // const { login } = useContext(UserContext);
   const usernames = JSON.parse(sessionStorage.getItem('username'));
   
   useEffect(() => {
@@ -56,7 +56,7 @@ function SignIn() {
   const loginAll = async (userType, e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('Login', {
+      const res = await axios.post('http://localhost:5000/Login', {
         regno,
         email,
         password,
@@ -73,7 +73,7 @@ function SignIn() {
         else{
           // login({id:res.data.id,username:"arun"});//data context
           // navigate('/admin', { state: { id: res.data.id} });//state passing
-          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"admin" }));//session
+          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"admin" ,userRole:"admin"}));//session
           navigate('/admin');
 
         }
@@ -82,7 +82,7 @@ function SignIn() {
         if(res.data?.message)
           setError(res.data.message);
         else{
-          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"teacher",department:res.data.dept_id }));//session
+          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"teacher",department:res.data.dept_id ,userRole:"teacher"}));//session
           navigate('/teacher');
 
         }
@@ -91,7 +91,7 @@ function SignIn() {
         if(res.data?.message)
           setError(res.data.message);
         else{
-          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"student",regno:res.data.user_regno,course:res.data.course_id,sem:res.data.current_sem }));//session
+          sessionStorage.setItem('username', JSON.stringify({ id: res.data.user_id, name:res.data.user_name , email:res.data.user_email,inst_id:res.data.inst_id,user_type:"student",regno:res.data.user_regno,course:res.data.course_id,sem:res.data.current_sem,userRole:"student" }));//session
           navigate('/student');
 
         }

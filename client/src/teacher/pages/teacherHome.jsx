@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/navbar'
 import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
-import { useNavigate } from 'react-router-dom'
 import ExamList from '../components/ExamList'
 import ExamForm from '../components/ExamForm'
 import { Student } from '../components/Student'
@@ -9,8 +9,22 @@ import { Subjects } from '../components/Subjects'
 import { Profile } from '../components/profile'
 
 export default function Home() {
-  
   const navigate = useNavigate();
+  const isAuthenticated = JSON.parse(sessionStorage.getItem("username"));
+  const userRole = isAuthenticated ? isAuthenticated.userRole :"no" // Example: Replace with your actual logic
+useEffect(()=>{
+  if (userRole === "teacher") {
+    console.log("first")
+}else{
+  const logout = ()=>{
+    // sessionStorage.removeItem("username");
+    navigate('/')
+}
+logout();
+
+}
+},[]);
+  
 
   return (
     <div>

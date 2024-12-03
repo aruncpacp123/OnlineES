@@ -2,17 +2,24 @@ const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const bcrypt = require('bcrypt');
+require('dotenv').config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+const DB_HOST = process.env.DB_HOST;
+const DB_USER = process.env.DB_USER;
+const DB_PASSWORD = process.env.DB_PASSWORD;
+const DB_NAME = process.env.DB_NAME;
+const PORT = process.env.PORT || 5000;
+
 const db=mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    password:"",
-    database:"cet_mca"
+    host:DB_HOST,
+    user:DB_USER,
+    password:DB_PASSWORD,
+    database:DB_NAME
 })
 
 db.connect((err) => {
@@ -48,7 +55,7 @@ app.post('/addInstitution',(req,res)=>{
 // Add Institution Admin with Password Hashing
 app.post('/addInstAdmin', async (req, res) => {
     try {
-        const hashedPassword = await bcrypt.hash(req.body.password, 10); // Hash the password with a salt round of 10
+        const hashedPassword = await bcrypt.hash(req.body.password, 5); // Hash the password with a salt round of 10
 
         const sql = "INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
         const values = [
@@ -71,11 +78,58 @@ app.post('/addInstAdmin', async (req, res) => {
         res.json({ message: 'Error hashing password: ' + error });
     }
 });
-
-// Login with Password Verification
 app.post('/login', async (req, res) => {
     let sql, values;
+    if (req.body.type === "admin") {
+        values = [
+            req.body.email,
+            req.body.type,
+            parseInt(req.body.institution)
+        ];
+        sql = "SELECT * FROM users WHERE user_email = ? AND user_type = ? AND inst_id = ?";
+    } else if (req.body.type === "student") {
+        values = [
+            req.body.regno,
+            req.body.type
+        ];
+        sql = "SELECT * FROM users INNER JOIN student ON users.user_id = student.student_id WHERE user_regno = ? AND user_type = ?";
+    } else if (req.body.type === "teacher") {
+        values = [
+            req.body.email,
+            req.body.type,
+            parseInt(req.body.institution)
+        ];
+        sql = "SELECT * FROM users INNER JOIN teacher ON users.user_id = teacher.teacher_id WHERE user_email = ? AND user_type = ?";
+    }
 
+
+
+    db.query(sql, values, async (err, result) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.json({ message: 'Some error occurred: ' + err });
+        }
+
+        if (result.length > 0) {
+            const user = result[0];
+       
+            const isPasswordMatch = await bcrypt.compare(req.body.password, user.user_password);
+          
+
+            if (isPasswordMatch) {
+                return res.json(user);
+            } else {
+                return res.json({ message: 'Invalid credentials' });
+            }
+        } else {
+            return res.json({ message: 'Invalid credentials or user not found' });
+        }
+    });
+});
+
+// Login with Password Verification
+/*app.post('/login', async (req, res) => {
+    let sql, values;
     if (req.body.type === "admin") {
         values = [
             req.body.email,
@@ -112,13 +166,14 @@ app.post('/login', async (req, res) => {
             if (isPasswordMatch) {
                 return res.json(user);
             } else {
-                return res.json({ message: 'Invalid credentials' });
+                return res.json({ message: 'Invalid credentials '});
             }
         } else {
             return res.json({ message: 'Invalid credentials or user not found' });
         }
     });
 });
+*/
 
 // app.post('/addInstAdmin',(req,res)=>{   
 //     // res.json({message:req.body.inst_id})
@@ -291,7 +346,7 @@ app.post('/fetchCourses',(req,res)=>{
 })
 
 app.post('/addStudent', async (req, res) => { 
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const hashedPassword = await bcrypt.hash(req.body.password, 5);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
     const values = [
@@ -328,7 +383,7 @@ app.post('/addStudent', async (req, res) => {
 });
 
 app.post('/addTeacher', async (req, res) => { 
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const hashedPassword = await bcrypt.hash(req.body.password, 5);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
     
     const values = [
@@ -1207,4 +1262,4 @@ app.post('/getAssignedSubjects',(req,res)=>{
     })
 })
 
-app.listen(5000)
+app.listen(PORT)
