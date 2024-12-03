@@ -15,7 +15,7 @@ export default function () {
 
     const fetchHistory= async ()=>{
         try {
-            const res = await axios.post('http://localhost:5000/fetchHistory',{regno});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/fetchHistory`,{regno});
             setTimeout(() => {
                 setHistory(res.data);
                 setLoading(false);

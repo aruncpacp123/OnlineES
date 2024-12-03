@@ -29,7 +29,7 @@ import {
         
         try 
         {
-          const res = await axios.post('http://localhost:5000/updateDepartment', {
+          const res = await axios.post(`${import.meta.env.VITE_URL}/updateDepartment`, {
             name,
             id
           });
@@ -83,7 +83,7 @@ export function Student() {
   const deleteStudent = async (id)=>{
     try 
     {
-      const res = await axios.post('http://localhost:5000/deleteStudent', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/deleteStudent`, {
         id
       });
     fetchStudents();
@@ -94,7 +94,7 @@ export function Student() {
 
   const fetchStudents= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/getStudents',{inst_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getStudents`,{inst_id});
           setStudent(res.data);
         } catch (err) {
           console.error("Error fetching Student Details:", err);

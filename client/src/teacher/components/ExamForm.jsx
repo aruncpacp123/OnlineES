@@ -31,7 +31,7 @@ export default function ExamForm() {
 
     const fetchSubjects= async ()=>{
         try {
-            const res = await axios.post('http://localhost:5000/fetchSubjects',{user_id});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/fetchSubjects`,{user_id});
             setSubjects(res.data);
           } catch (err) {
             console.error("Error fetching Courses:", err);
@@ -42,7 +42,7 @@ export default function ExamForm() {
         e.preventDefault();
 // setStep1(true)
         try{
-            const res = await axios.post('http://localhost:5000/createExam',formFields);
+            const res = await axios.post(`${import.meta.env.VITE_URL}/createExam`,formFields);
             console.log(formFields.objective)
             if(res.data.quiz_id !=null)//res.data.quiz_id!=0
                 navigate('/teacher/exam/step1',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })

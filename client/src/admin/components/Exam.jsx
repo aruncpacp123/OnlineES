@@ -19,7 +19,7 @@ export default function () {
 
     const fetchExams= async ()=>{
         try {
-            const res = await axios.post('http://localhost:5000/getAllExams',{inst_id});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getAllExams`,{inst_id});
             setTimeout(() => {
                 setExam(res.data);
                 setLoading(false);

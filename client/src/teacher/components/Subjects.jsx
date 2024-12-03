@@ -34,7 +34,7 @@ export function Subjects() {
 
   const fetchSubjects= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/getAssignedSubjects',{user_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getAssignedSubjects`,{user_id});
           setSubject(res.data);
         } catch (err) {
           console.error("Error fetching Student Details:", err);

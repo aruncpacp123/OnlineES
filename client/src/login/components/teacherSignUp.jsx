@@ -35,7 +35,7 @@ export default function TeacherSignUp() {
       const submit = async (e) =>{
         e.preventDefault();
         try{
-          const res = await axios.post('http://localhost:5000/addTeacher',formFields);
+          const res = await axios.post(`${import.meta.env.VITE_URL}/addTeacher`,formFields);
           alert("Teacher Created Successfully");
           navigate('/');
           console.log(res);
@@ -47,7 +47,7 @@ export default function TeacherSignUp() {
 
       const fetchColleges = async () => {
         try {
-          const res = await axios.get('http://localhost:5000/getCollege');
+          const res = await axios.get(`${import.meta.env.VITE_URL}/getCollege`);
           setColleges(res.data);
         } catch (err) {
           console.error("Error fetching colleges:", err);
@@ -56,7 +56,7 @@ export default function TeacherSignUp() {
 
       const fetchDepartments= async (id)=>{
         try {
-            const res = await axios.post('http://localhost:5000/getDepartments',{
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getDepartments`,{
                 inst_id:parseInt(id,10)
             });
             setDepartments(res.data);

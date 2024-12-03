@@ -27,7 +27,7 @@ export function Profile() {
     const [loading,setLoading] = useState(true);
     const studentDetails = async ()=>{
       try{
-          const res = await axios.post('http://localhost:5000/getStudentDetails', {user_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getStudentDetails`, {user_id});
           setStudent(res.data);
           setLoading(false);
       }

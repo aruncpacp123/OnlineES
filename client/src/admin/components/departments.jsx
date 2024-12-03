@@ -29,7 +29,7 @@ import {
         
         try 
         {
-          const res = await axios.post('http://localhost:5000/updateDepartment', {
+          const res = await axios.post(`${import.meta.env.VITE_URL}/updateDepartment`, {
             name,
             id
           });
@@ -84,7 +84,7 @@ export default function Departments() {
     e.preventDefault();
     try 
     {
-      const res = await axios.post('http://localhost:5000/addDepartment', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/addDepartment`, {
         name,
         inst_id
       });
@@ -99,7 +99,7 @@ export default function Departments() {
   const deleteDepartment = async (id)=>{
     try 
     {
-      const res = await axios.post('http://localhost:5000/deleteDepartment', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/deleteDepartment`, {
         id
       });
     fetchDepartments();
@@ -110,7 +110,7 @@ export default function Departments() {
 
   const fetchDepartments= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/getDepartments',{inst_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getDepartments`,{inst_id});
           setDepartments(res.data);
           console.log(departments)
         } catch (err) {

@@ -32,7 +32,7 @@ export function TeacherList() {
   const deleteTeacher = async (id)=>{
     try 
     {
-      const res = await axios.post('http://localhost:5000/deleteTeacher', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/deleteTeacher`, {
         id
       });
     fetchTeachers();
@@ -43,7 +43,7 @@ export function TeacherList() {
 
   const fetchTeachers= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/fetchTeachers',{inst_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/fetchTeachers`,{inst_id});
           setTeacher(res.data);
         } catch (err) {
           console.error("Error fetching Teacher Details:", err);

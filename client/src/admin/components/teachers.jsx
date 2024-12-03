@@ -4,7 +4,7 @@ export default function Teachers({value}) {
   const [teacher,setTeacher] = useState([]);
     const fetchTeachers= async ()=>{
         try {
-            const res = await axios.get('http://localhost:5000/getTeachers',{
+            const res = await axios.get(`${import.meta.env.VITE_URL}/getTeachers`,{
                 params:{
                     sub_id:value
                 }

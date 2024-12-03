@@ -41,7 +41,7 @@ export default function QuizForm() {
         console.log(formFields)
         console.log(quiz_id,quiz_no,subjective_id,subjective_no)
 
-      const res = await axios.post(`http://localhost:5000/addQuizQuestions/${quiz_id}`, formFields);
+      const res = await axios.post(`${import.meta.env.VITE_URL}/addQuizQuestions/${quiz_id}`, formFields);
       if(subjective_id!=null){
         navigate('/teacher/exam/step2',{ state: { exam_id:res.data.exam_id,subjective_id:subjective_id,quiz_id:res.data.quiz_id,sub_no:subjective_no,quiz_no:quiz_no} })
       }

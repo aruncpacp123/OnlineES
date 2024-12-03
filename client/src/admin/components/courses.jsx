@@ -33,7 +33,7 @@ import { Outlet } from 'react-router-dom'
         
         try 
         {
-          const res = await axios.post('http://localhost:5000/updateCourse',{courseFields,id},);
+          const res = await axios.post(`${import.meta.env.VITE_URL}/updateCourse`,{courseFields,id},);
         setIsDialogOpen(false);
         setCourseFields({
             name:'',
@@ -105,7 +105,7 @@ export default function Courses() {
     try 
     {
       console.log(courseFields);
-      const res = await axios.post('http://localhost:5000/addCourse',courseFields);
+      const res = await axios.post(`${import.meta.env.VITE_URL}/addCourse`,courseFields);
       console.log(res)
       fetchCourses();
       setIsDialogOpen(false);
@@ -122,7 +122,7 @@ export default function Courses() {
   const deleteCourse = async (id)=>{
     try 
     {
-      const res = await axios.post('http://localhost:5000/deleteCourse', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/deleteCourse`, {
         id
       });
     fetchCourses();
@@ -133,7 +133,7 @@ export default function Courses() {
 
   const fetchCourses= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/getCourses',{inst_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getCourses`,{inst_id});
           setCourses(res.data);
           console.log(courses)
         } catch (err) {
@@ -142,7 +142,7 @@ export default function Courses() {
   };
   const fetchDepartments= async ()=>{
     try {
-        const res = await axios.post('http://localhost:5000/getDepartments',{inst_id});
+        const res = await axios.post(`${import.meta.env.VITE_URL}/getDepartments`,{inst_id});
         setDepartments(res.data);
       } catch (err) {
         console.error("Error fetching Departments:", err);

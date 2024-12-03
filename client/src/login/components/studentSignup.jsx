@@ -38,7 +38,7 @@ export default function StudentSignup() {
         e.preventDefault();
         try{
             console.log(typeof(formFields.inst_id))
-          const res = await axios.post('http://localhost:5000/addStudent',formFields);
+          const res = await axios.post(`${import.meta.env.VITE_URL}/addStudent`,formFields);
           alert("Student Created Successfully");
           navigate('/');
           console.log(res);
@@ -50,7 +50,7 @@ export default function StudentSignup() {
 
       const fetchColleges = async () => {
         try {
-          const res = await axios.get('http://localhost:5000/getCollege');
+          const res = await axios.get(`${import.meta.env.VITE_URL}/getCollege`);
           setColleges(res.data);
         } catch (err) {
           console.error("Error fetching colleges:", err);
@@ -59,7 +59,7 @@ export default function StudentSignup() {
 
       const fetchCourses = async (id) => {
         try {
-          const res = await axios.post('http://localhost:5000/getCourses',{
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getCourses`,{
             inst_id:parseInt(id,10)
           });
           setCourses(res.data);
@@ -69,7 +69,7 @@ export default function StudentSignup() {
       };
     //   const fetchCourses = async (id) => {
     //     try {
-    //         const res = await axios.get('http://localhost:5000/getCourses', {
+    //         const res = await axios.get(`${import.meta.env.VITE_URL}/getCourses`, {
     //             params: { inst_id: parseInt(id, 10) } // Send as query parameter using get and in backend "const inst_id = parseInt(req.query.inst_id, 10);"
     //         });
     //         setCourses(res.data);
@@ -77,7 +77,7 @@ export default function StudentSignup() {
     //         console.error("Error fetching Courses:", err);
     //     }
     // };
-    // const res = await axios.get('http://localhost:5000/getCourses/`$id`)' THis will send id through  and in backend "const inst_id = parseInt(req.params.inst_id, 10);"
+    // const res = await axios.get(`${import.meta.env.VITE_URL}/getCourses/`$id`)` THis will send id through  and in backend "const inst_id = parseInt(req.params.inst_id, 10);"
         //         });
       useEffect(()=>{
         fetchColleges();

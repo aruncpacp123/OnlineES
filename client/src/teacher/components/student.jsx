@@ -34,7 +34,7 @@ export function Student() {
 
   const fetchStudents= async ()=>{
       try {
-          const res = await axios.post('http://localhost:5000/getStudentsByDepartment',{dept_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/getStudentsByDepartment`,{dept_id});
           setStudent(res.data);
         } catch (err) {
           console.error("Error fetching Student Details:", err);
