@@ -22,7 +22,7 @@ import Courses from '../components/courses'
 import { useNavigate } from 'react-router-dom'
 import Subjects from '../components/subjects'
 import { Student } from '../components/student'
-import { TeacherList } from '../components/TeacherList'
+import { TeacherList } from '../components/teacherList'
 import Exam from '../components/Exam'
 export default function Home() {
 
