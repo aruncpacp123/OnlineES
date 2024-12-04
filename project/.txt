@@ -1,0 +1,12 @@
+There are mainly three branches
+1.Deployment : Used for deploying App
+2.Develop : Used for Developing/adding/maintenance
+3.Main :Used for checking everything runs perfectly when pushed/merged to deployment branches.Because Main contain currently deployed code and by
+        pushing the code firat to main can verify everything work fine with current code.After validating push to deployment
+
+
+4.Develop2 :  Here we do major changes
+
+Actually all three branches have same code after a deployment.
+If we want major changes we can create any branches and also we can deploy from different branches as different versions.
+If we want old versions also keep it in another branch and deploy the latest version's branch
