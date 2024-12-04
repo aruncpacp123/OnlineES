@@ -34,7 +34,7 @@ export default function InstRegister2({value}) {
       const submit = async (e) =>{
         e.preventDefault();
         try{
-          const res = await axios.post('http://localhost:5000/addInstAdmin',formFields);
+          const res = await axios.post(`${import.meta.env.VITE_URL}/addInstAdmin`,formFields);
           alert("Admin Created Successfully");
           navigate('/')
           console.log(res);

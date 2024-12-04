@@ -38,7 +38,7 @@ export default function({details}) {
     const fetchQuizAttendees= async ()=>{
         try {
             console.log(details)
-            const res = await axios.post('http://localhost:5000/getQuizAttendees',{quiz_id});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getQuizAttendees`,{quiz_id});
             setTimeout(() => {
                 setExam(res.data);
                 setLoading(false);
@@ -50,7 +50,7 @@ export default function({details}) {
     const fetchSubjectiveAttendees= async ()=>{
         try {
             console.log(details)
-            const res = await axios.post('http://localhost:5000/getSubjectiveAttendees',{subjective_id});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getSubjectiveAttendees`,{subjective_id});
             setTimeout(() => {
                 setExam(res.data);
                 setLoading(false);
@@ -62,7 +62,7 @@ export default function({details}) {
     const fetchBothAttendeess= async ()=>{
         try {
             console.log(details)
-            const res = await axios.post('http://localhost:5000/getBoth',{exam_id});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getBoth`,{exam_id});
             setTimeout(() => {
                 setExam(res.data.attendees);
                 setMarks(res.data.marks);
@@ -76,7 +76,7 @@ export default function({details}) {
     const fetchMark= async (sub_id,regno)=>{
         try {
             console.log(sub_id,regno)
-            const res = await axios.post('http://localhost:5000/getMark',{sub_id,regno});
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getMark`,{sub_id,regno});
             console.log(res.data)
             setTimeout(() => {
                 setLoading2(false);
@@ -88,13 +88,13 @@ export default function({details}) {
     };
     const fetchBothAttendees = async () => {
         try {
-            const res = await axios.post('http://localhost:5000/getBothAttendees', { exam_id });
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getBothAttendees`, { exam_id });
             setExam(res.data);
             setLoading(false);
 
             // Fetch marks for each attendee
             const markPromises = res.data.map(async item => {
-                const response = await axios.post('http://localhost:5000/getMark', {
+                const response = await axios.post(`${import.meta.env.VITE_URL}/getMark`, {
                     sub_id: item.subjective_id,
                     regno: item.user_regno
                 });

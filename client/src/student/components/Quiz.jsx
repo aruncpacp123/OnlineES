@@ -190,7 +190,7 @@ export default function Quiz() {
   const submit = async (e) => {
     e.preventDefault();
     try {
-    const res = await axios.post(`http://localhost:5000/attemptQuiz/${regno}/${quiz_id}/${quizMark}/${exam_id}`, formFields);
+    const res = await axios.post(`${import.meta.env.VITE_URL}/attemptQuiz/${regno}/${quiz_id}/${quizMark}/${exam_id}`, formFields);
       if (subjective_id) {
         navigate('/student/exam/subjective',{ state: { subjective_id,sno,exam_id,quiz_id,duration} })
       } else {
@@ -204,7 +204,7 @@ export default function Quiz() {
 
   const fetchQuiz = async () => {
     try {
-      const res = await axios.post('http://localhost:5000/fetchQuizQuestions', { quiz_id });
+      const res = await axios.post(`${import.meta.env.VITE_URL}/fetchQuizQuestions`, { quiz_id });
       setTimeout(() => {
         setQuizQuestions(res.data);
         setLoading(false);

@@ -32,7 +32,7 @@ function SignIn() {
   useEffect(() => {
     const fetchColleges = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/getCollege');
+        const res = await axios.get(`${import.meta.env.VITE_URL}/getCollege`);
         setCollege(res.data);
       } catch (err) {
         console.error("Error fetching colleges:", err);
@@ -56,7 +56,7 @@ function SignIn() {
   const loginAll = async (userType, e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/Login', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/login`, {
         regno,
         email,
         password,

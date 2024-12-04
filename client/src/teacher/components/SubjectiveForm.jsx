@@ -34,7 +34,7 @@ export default function SubjectiveForm() {
     try {
         console.log(formFields)
         
-      const res = await axios.post(`http://localhost:5000/addSubjectiveQuestions/${subjective_id}`, formFields);
+      const res = await axios.post(`${import.meta.env.VITE_URL}/addSubjectiveQuestions/${subjective_id}`, formFields);
 
       
         navigate('/teacher')

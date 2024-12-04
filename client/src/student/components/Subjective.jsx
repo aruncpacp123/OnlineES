@@ -39,7 +39,7 @@ export default function Quiz() {
       const submit = async (e) => {
         e.preventDefault();
         try {
-        const res = await axios.post(`http://localhost:5000/attemptSubjective/${regno}/${subjective_id}/${quiz_id}/${exam_id}`, formFields);
+        const res = await axios.post(`${import.meta.env.VITE_URL}/attemptSubjective/${regno}/${subjective_id}/${quiz_id}/${exam_id}`, formFields);
 
             navigate('/student');
           console.log(res.data);
@@ -50,7 +50,7 @@ export default function Quiz() {
 
       const fetchSubjective = async () => {
         try {
-          const res = await axios.post('http://localhost:5000/fetchSubjectiveQuestions', { subjective_id });
+          const res = await axios.post(`${import.meta.env.VITE_URL}/fetchSubjectiveQuestions`, { subjective_id });
           setTimeout(() => {
             setSubjectiveQuestions(res.data);
             setLoading(false);

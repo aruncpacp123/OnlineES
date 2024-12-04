@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useNavigate } from 'react-router-dom'
 import ExamList from '../components/ExamList'
 import { Profile } from '../components/profile'
-import History from '../components/history'
+import History from '../components/History'
 
 export default function Home() {
     const navigate = useNavigate();

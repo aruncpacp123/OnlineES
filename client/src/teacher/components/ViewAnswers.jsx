@@ -28,7 +28,7 @@ export default function ViewAnswers({answer}) {
         e.preventDefault();
         try {
             console.log(formFields)
-          const res = await axios.post(`http://localhost:5000/addMark/${regno}/${subjective_id}/${exam_id}`, formFields);
+          const res = await axios.post(`${import.meta.env.VITE_URL}/addMark/${regno}/${subjective_id}/${exam_id}`, formFields);
 
             // navigate('/student');
           console.log(res.data);
@@ -39,7 +39,7 @@ export default function ViewAnswers({answer}) {
     
       const fetchAnswers= async () => {
         try {
-          const res = await axios.post('http://localhost:5000/fetchSubjectiveAnswers', { regno,subjective_id });
+          const res = await axios.post(`${import.meta.env.VITE_URL}/fetchSubjectiveAnswers`, { regno,subjective_id });
           setTimeout(() => {
             setSubjectiveAnswers(res.data);
             setLoading(false);

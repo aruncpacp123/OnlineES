@@ -45,7 +45,7 @@ export default function Subjects() {
     e.preventDefault();
     try 
     {
-      const res = await axios.post('http://localhost:5000/addSubject',subjectFields);
+      const res = await axios.post(`${import.meta.env.VITE_URL}/addSubject`,subjectFields);
       console.log(res)
       setIsDialogOpen(false);
       fetchSubjects();
@@ -62,7 +62,7 @@ export default function Subjects() {
   const deleteSubject = async (id)=>{
     try 
     {
-      const res = await axios.post('http://localhost:5000/deleteSubject', {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/deleteSubject`, {
         id
       });
     fetchSubjects();
@@ -72,7 +72,7 @@ export default function Subjects() {
   };
   const fetchSubjects= async ()=>{
     try {
-        const res = await axios.post('http://localhost:5000/getSubjects',{inst_id});
+        const res = await axios.post(`${import.meta.env.VITE_URL}/getSubjects`,{inst_id});
         setSubjects(res.data);
       } catch (err) {
         console.error("Error fetching Courses:", err);
@@ -80,7 +80,7 @@ export default function Subjects() {
 };
   const fetchCourses= async (dept_id)=>{
       try {
-          const res = await axios.post('http://localhost:5000/fetchCourses',{dept_id});
+          const res = await axios.post(`${import.meta.env.VITE_URL}/fetchCourses`,{dept_id});
           setCourses(res.data);
         } catch (err) {
           console.error("Error fetching Courses:", err);
@@ -88,7 +88,7 @@ export default function Subjects() {
   };
   const fetchDepartments= async ()=>{
     try {
-        const res = await axios.post('http://localhost:5000/getDepartments',{inst_id});
+        const res = await axios.post(`${import.meta.env.VITE_URL}/getDepartments`,{inst_id});
         setDepartments(res.data);
       } catch (err) {
         console.error("Error fetching Departments:", err);
@@ -96,7 +96,7 @@ export default function Subjects() {
 };
 const fetchTeachers= async (sub_id)=>{
   try {
-      const res = await axios.post('http://localhost:5000/getTeachers',{sub_id});
+      const res = await axios.post(`${import.meta.env.VITE_URL}/getTeachers`,{sub_id});
       if(res.data.length >0){
         setTeacher(res.data.teacher_id);
       }
