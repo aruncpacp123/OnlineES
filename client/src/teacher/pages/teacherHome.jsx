@@ -4,7 +4,7 @@ import Navbar from '../components/navbar'
 import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
 import ExamList from '../components/ExamList'
 import ExamForm from '../components/ExamForm'
-import { Student } from '../components/Student'
+import { Student } from '../components/student'
 import { Subjects } from '../components/Subjects'
 import { Profile } from '../components/profile'
 
