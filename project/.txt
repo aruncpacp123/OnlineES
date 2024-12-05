@@ -4,7 +4,6 @@ There are mainly three branches
 3.Main :Used for checking everything runs perfectly when pushed/merged to deployment branches.Because Main contain currently deployed code and by
         pushing the code firat to main can verify everything work fine with current code.After validating push to deployment
 
-
 4.Develop2 :  Here we do major changes
 
 Actually all three branches have same code after a deployment.
