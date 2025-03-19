@@ -33,6 +33,7 @@ function SignIn() {
     const fetchColleges = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_URL}/getCollege`);
+        console.log("hi");
         setCollege(res.data);
       } catch (err) {
         console.error("Error fetching colleges:", err);

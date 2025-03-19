@@ -1,5 +1,5 @@
 
-import React ,{useEffect, useState} from 'react'
+import React ,{useEffect, useRef, useState} from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import {Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle,} from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ export default function Quiz() {
     
   const location = useLocation();
   const navigate = useNavigate();
+  const videoRef = useRef(null);
   const subjective_id = location.state?.subjective_id;
 
   const sno = location.state?.sno;
@@ -30,7 +31,15 @@ export default function Quiz() {
   const [formFields, setFormFields] = useState([]);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
+  document.addEventListener('copy', function(e) {
+    e.preventDefault();
+});
+document.addEventListener('paste', function(e) {
+    e.preventDefault();
+});
+document.addEventListener('cut', function(e) {
+    e.preventDefault();
+});
     const handleInputChange = (index, field, value) => {
         const updatedFields = [...formFields];
         updatedFields[index][field] = value;
@@ -40,8 +49,8 @@ export default function Quiz() {
         e.preventDefault();
         try {
         const res = await axios.post(`${import.meta.env.VITE_URL}/attemptSubjective/${regno}/${subjective_id}/${quiz_id}/${exam_id}`, formFields);
-
             navigate('/student');
+            stopCamera();
           console.log(res.data);
         } catch (err) {
           console.log(err);
@@ -59,9 +68,48 @@ export default function Quiz() {
           console.error("Error fetching questions:", err);
         }
       };
+
+      // Start camera and face detection
+        const startCamera = async () => {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+          } catch (error) {
+            console.error('Error accessing camera:', error);
+          }
+        };
+        const stopCamera = () => {
+  if (videoRef.current && videoRef.current.stream) {
+    const tracks = videoRef.current.stream.getTracks();
+    tracks.forEach(track => track.stop());
+    videoRef.current.srcObject = null;
+  }
+};
+        // Initialize face detection
+        const initializeFaceDetection = async () => {
+          await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+          const videoElement = videoRef.current;
+          if (videoElement) {
+            const canvas = faceapi.createCanvasFromMedia(videoElement);
+            document.body.append(canvas);
+            const displaySize = { width: videoElement.width, height: videoElement.height };
+            faceapi.matchDimensions(canvas, displaySize);
+      
+            setInterval(async () => {
+              const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions());
+              if (detections.length > 1) {
+                alert('More than one person detected!');
+              }
+            }, 1000);
+          }
+        };
+      
     
       useEffect(() => {
         fetchSubjective();
+        startCamera();
       }, [loading]);
     
       useEffect(() => {
@@ -97,14 +145,19 @@ export default function Quiz() {
         return () => clearInterval(timer); // Cleanup interval on component unmount
       }, []);
   return (
-    <>
-        <div className="grid grid-cols-9 ">
-            <div className="flex items-center justify-center col-span-2 bg-slate-200 md:min-h-screen">
-            <div className="text-3xl">
-            {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
-          </div>
-            </div>
-            <div className="flex items-center justify-center col-span-5 bg-slate-100">
+    <div className="min-h-screen bg-gray-100 p-6">
+      {/* Top Bar */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-2xl font-bold">
+          Quiz Timer: {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
+        </div>
+      </div>
+       {/* Main Content */}
+       <div className="grid grid-cols-3 gap-6">
+        {/* Left Side (Empty) */}
+        <div className="col-span-1"></div>
+
+        <div className="col-span-1">
                 <form onSubmit={submit}>
                     {
                     loading?(<div className="">Loading....</div>):
@@ -143,11 +196,13 @@ export default function Quiz() {
                 </form>
 
             </div>
-            <div className="col-span-2 bg-slate-200">
-
+            <div className="col-span-1 flex justify-end">
+              <div className="w-64 h-48 bg-black rounded-lg overflow-hidden">
+                  <video ref={videoRef} autoPlay className="w-full h-full" />
+              </div>
             </div>
+          </div>
         </div>
-    </>
   )
 }
 /*

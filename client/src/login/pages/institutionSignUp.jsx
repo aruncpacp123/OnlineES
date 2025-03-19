@@ -22,7 +22,8 @@ function Institution() {
   const submit = async (e) =>{
     e.preventDefault();
     try{
-      const res = axios.post(`${import.meta.env.VITE_URL}`,formFields)
+      console.log(formFields);
+      const res = axios.post(`${import.meta.env.VITE_URL}/addInstitution`,formFields)
       .then((res)=>{
         alert("institution Created Successfully");
         setStep2(true);

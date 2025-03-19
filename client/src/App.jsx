@@ -12,6 +12,8 @@ import Quiz from "./student/components/Quiz";
 import Subjective from "./student/components/Subjective";
 import { Profile } from "./teacher/components/profile";
 import PrivateRoute from "./PrivateRoute"; // Import the updated PrivateRoute
+import FaceDetectionComponent from "./student/components/Test";
+import Demo from "./components/ui/Demo";
 
 function App() {
   return (
@@ -97,6 +99,14 @@ function App() {
           element={
             <PrivateRoute allowedRoles={["student"]}>
               <Subjective />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/student/exam/test"
+          element={
+            <PrivateRoute allowedRoles={["student"]}>
+              <Demo/>
             </PrivateRoute>
           }
         />

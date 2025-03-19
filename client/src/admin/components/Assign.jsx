@@ -19,7 +19,7 @@ export default function Assign({sub_id,dept_id,sub_name}) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const fetchTeachers= async ()=>{
         try {
-            const res = await axios.get(`${import.meta.env.VITE_URL}/${dept_id}`);
+            const res = await axios.get(`${import.meta.env.VITE_URL}/fetchTeachers/${dept_id}`);
             if(res.data.length >0){
               setTeachers(res.data);
             }

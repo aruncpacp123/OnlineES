@@ -33,7 +33,7 @@ export default function SubjectiveForm() {
     e.preventDefault();
     try {
         console.log(formFields)
-        
+        console.log(subjective_id);
       const res = await axios.post(`${import.meta.env.VITE_URL}/addSubjectiveQuestions/${subjective_id}`, formFields);
 
       

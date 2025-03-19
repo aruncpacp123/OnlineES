@@ -1,5 +1,6 @@
 const express = require("express");
 const mysql = require("mysql");
+// const sql = require('mssql');
 const cors = require("cors");
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
@@ -21,7 +22,12 @@ const db=mysql.createConnection({
     password:DB_PASSWORD,
     database:DB_NAME
 })
-
+// const db = sql.connect({
+//     user:DB_USER,
+//     password:DB_PASSWORD,
+//     server:DB_HOST,
+//     database:DB_NAME
+// })
 db.connect((err) => {
     if (err) {
       console.error('Error connecting to the database:', err);
@@ -30,7 +36,7 @@ db.connect((err) => {
     console.log('Database connected successfully!');
   });
 app.get('/users',(req,res)=>{
-    const sql="select * from user";
+    const sql="select * from users";
     db.query(sql,(err,data)=>{
         if(err) return res.json(err);
         return res.json(data);
@@ -795,7 +801,7 @@ app.post('/attemptQuiz/:regno/:quiz_id/:quizMark/:exam_id', (req, res) => {
         if(question[1] === question[2])//question.answer === question.correctanswer
             correct++;
         else
-            wrong++
+            wrong++;
       });
       const totalMark=correct*req.params.quizMark;
     const sql = "INSERT INTO `quiz_result` (`quiz_id`, `student_regno`, `correct_no`, `wrong_no`, `total_mark`) VALUES (?,?,?,?,?)";

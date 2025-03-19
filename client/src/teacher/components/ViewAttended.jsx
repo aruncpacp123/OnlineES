@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState,PureComponent } from 'react'
 import {Table,TableBody,TableCaption,TableCell,TableHead,TableHeader,TableRow,} from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ViewAnswers from './ViewAnswers';
+import { BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { List } from 'lucide-react';
 export default function({details}) {
 
@@ -153,7 +154,7 @@ export default function({details}) {
             </TableBody>
         </Table>
         }
-        {sub && list &&
+        {sub && list &&<>
         <Table className="">
             <TableCaption>A list of Exams.</TableCaption>
             <TableHeader>
@@ -182,9 +183,11 @@ export default function({details}) {
             }
             </TableBody>
         </Table>
+
+        </>
         }
         {both && list && marks &&
-        
+        <>
         <Table className="">
             <TableCaption>A list of Exams.</TableCaption>
             <TableHeader>
@@ -218,6 +221,12 @@ export default function({details}) {
             }
             </TableBody>
         </Table>
+        <ResponsiveContainer width="100%" height="100%">
+        <BarChart width={150} height={40} data={exam}>
+          <Bar dataKey="qtotal" fill="#8884d8" />
+        </BarChart>
+      </ResponsiveContainer>
+        </>
         }
         {more && answer && <ViewAnswers answer={answer}/>}
     </div>
