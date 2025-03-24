@@ -24,6 +24,7 @@ import Subjects from '../components/subjects'
 import { Student } from '../components/student'
 import { TeacherList } from '../components/teacherList'
 import Exam from '../components/Exam'
+import Pending from '../components/Pending'
 export default function Home() {
 
     const navigate = useNavigate();
@@ -46,8 +47,9 @@ export default function Home() {
         <Navbar />
         <div className="flex border-t-4 border-t-slate-800">
             <Tabs defaultValue="exam" className="min-w-full ">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="exam">Exam</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="student">Students</TabsTrigger>
                 <TabsTrigger value="teacher">Teachers</TabsTrigger>
                 {/* <TabsTrigger value="pending">Pending</TabsTrigger>   */}
@@ -58,6 +60,9 @@ export default function Home() {
               </TabsList>
               <TabsContent value="exam">
                 <Exam />
+              </TabsContent>
+              <TabsContent value="pending">
+                <Pending />
               </TabsContent>
               <TabsContent value="student">
                 <Student />

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ViewAnswers from './ViewAnswers';
-import { BarChart, Bar, ResponsiveContainer } from 'recharts';
+// import { BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { List } from 'lucide-react';
 export default function({details}) {
 
@@ -221,11 +221,6 @@ export default function({details}) {
             }
             </TableBody>
         </Table>
-        <ResponsiveContainer width="100%" height="100%">
-        <BarChart width={150} height={40} data={exam}>
-          <Bar dataKey="qtotal" fill="#8884d8" />
-        </BarChart>
-      </ResponsiveContainer>
         </>
         }
         {more && answer && <ViewAnswers answer={answer}/>}

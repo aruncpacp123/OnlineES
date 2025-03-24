@@ -4,7 +4,7 @@ const mysql = require("mysql");
 const cors = require("cors");
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
-
+// const { connectToDatabase, sql } = require('./db');
 const app = express();
 
 app.use(cors());
@@ -35,6 +35,11 @@ db.connect((err) => {
     }
     console.log('Database connected successfully!');
   });
+
+// let dbPool;
+// (async () => {
+//   dbPool = await connectToDatabase();
+// })();
 app.get('/users',(req,res)=>{
     const sql="select * from users";
     db.query(sql,(err,data)=>{
@@ -53,6 +58,7 @@ app.post('/addInstitution',(req,res)=>{
         req.body.address,
         req.body.phone
     ]
+    console.log("object");
     db.query(sql,values,(err,result)=>{
         if(err) return res.json({message:'Something has Occured' + err})
         return res.json({ id: result.insertId,name:req.body.name })
@@ -98,14 +104,14 @@ app.post('/login', async (req, res) => {
             req.body.regno,
             req.body.type
         ];
-        sql = "SELECT * FROM users INNER JOIN student ON users.user_id = student.student_id WHERE user_regno = ? AND user_type = ?";
+        sql = "SELECT * FROM users INNER JOIN student ON users.user_id = student.student_id WHERE user_regno = ? AND user_type =?  AND student.status='approved'";
     } else if (req.body.type === "teacher") {
         values = [
             req.body.email,
             req.body.type,
             parseInt(req.body.institution)
         ];
-        sql = "SELECT * FROM users INNER JOIN teacher ON users.user_id = teacher.teacher_id WHERE user_email = ? AND user_type = ?";
+        sql = "SELECT * FROM users INNER JOIN teacher ON users.user_id = teacher.teacher_id WHERE user_email = ? AND user_type = ? AND teacher.status='approved'";
     }
 
 
@@ -376,7 +382,7 @@ app.post('/addStudent', async (req, res) => {
             user_id,
             parseInt(req.body.course),
             parseInt(req.body.semester),
-            "approved"
+            "pending"
         ];
 
         db.query(studentSql, values2, (err, result) => {
@@ -387,7 +393,6 @@ app.post('/addStudent', async (req, res) => {
         });
     });
 });
-
 app.post('/addTeacher', async (req, res) => { 
     const hashedPassword = await bcrypt.hash(req.body.password, 5);
     const userSql="INSERT INTO `users` (`user_name`, `user_email`, `user_regno`, `user_phno`, `user_password`, `user_gender`, `user_dob`, `user_type`, `inst_id`) VALUES (?,?,?,?,?,?,?,?,?)";
@@ -412,7 +417,7 @@ app.post('/addTeacher', async (req, res) => {
         const values2 = [
             user_id,
             parseInt(req.body.dept_id),
-            "approved"
+            "pending"
         ];
 
         db.query(teacherSql, values2, (err, result) => {
@@ -423,6 +428,40 @@ app.post('/addTeacher', async (req, res) => {
         });
     });
 });
+
+app.post('/getPendingTeacher',(req,res)=>{
+    sql="select * from users inner join teacher on teacher.teacher_id = users.user_id inner join department on department.dept_id= teacher.dept_id where teacher.status='pending' and users.inst_id = ?";
+    db.query(sql,[req.body.inst_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/getPendingStudents',(req,res)=>{
+    sql="select * from users inner join student on student.student_id = users.user_id inner join course on course.course_id = student.course_id where student.status='pending' and users.inst_id = ?";
+    db.query(sql,[req.body.inst_id],(err,result)=>{
+        if(err)
+            return res.json({message:'Some Error Occured' + err})
+        return res.json(result)
+    })
+})
+
+app.post('/updatePendingStudent',(req,res)=>{   
+    sql="UPDATE `student` SET `status`=?  WHERE `student_id` = ?";
+    db.query(sql,[req.body.status,req.body.student_id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Student Updated successfully' })
+    })
+})
+
+app.post('/updatePendingTeacher',(req,res)=>{   
+    sql="UPDATE `teacher` SET `status`=?  WHERE `teacher_id` = ?";
+    db.query(sql,[req.body.status,req.body.teacher_id],(err,result)=>{
+        if(err) return res.json({message:'Something has Occured' + err})
+        return res.json({message: 'Teacher Updated successfully' })
+    })
+})
 
 app.post('/addSubject',(req,res)=>{   
     // res.json({message:req.body.inst_id})

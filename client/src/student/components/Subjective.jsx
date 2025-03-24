@@ -13,6 +13,7 @@ export default function Quiz() {
   const location = useLocation();
   const navigate = useNavigate();
   const videoRef = useRef(null);
+  const detectionIntervalRef = useRef(null);
   const subjective_id = location.state?.subjective_id;
 
   const sno = location.state?.sno;
@@ -29,7 +30,8 @@ export default function Quiz() {
   const [subjectiveQuestions, setSubjectiveQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formFields, setFormFields] = useState([]);
-
+const [alertCount, setAlertCount] = useState(0);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   document.addEventListener('copy', function(e) {
     e.preventDefault();
@@ -40,6 +42,14 @@ document.addEventListener('paste', function(e) {
 document.addEventListener('cut', function(e) {
     e.preventDefault();
 });
+const enterFullscreen = () => {
+    const element = document.documentElement;
+    if (element.requestFullscreen) {
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      element.webkitRequestFullscreen();
+    }
+  };
     const handleInputChange = (index, field, value) => {
         const updatedFields = [...formFields];
         updatedFields[index][field] = value;
@@ -87,31 +97,75 @@ document.addEventListener('cut', function(e) {
     videoRef.current.srcObject = null;
   }
 };
-        // Initialize face detection
-        const initializeFaceDetection = async () => {
-          await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-          const videoElement = videoRef.current;
-          if (videoElement) {
-            const canvas = faceapi.createCanvasFromMedia(videoElement);
-            document.body.append(canvas);
-            const displaySize = { width: videoElement.width, height: videoElement.height };
-            faceapi.matchDimensions(canvas, displaySize);
-      
-            setInterval(async () => {
-              const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions());
+        const loadFaceApiModels = async () => {
+            try {
+              await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+              ]);
+              setModelsLoaded(true);
+            } catch (error) {
+              console.error('Error loading face-api models:', error);
+            }
+          };
+        
+          const initializeFaceDetection = () => {
+            if (!modelsLoaded || !videoRef.current) return;
+        
+            detectionIntervalRef.current = setInterval(async () => {
+              const detections = await faceapi.detectAllFaces(
+                videoRef.current,
+                new faceapi.TinyFaceDetectorOptions()
+              );
+        
               if (detections.length > 1) {
-                alert('More than one person detected!');
+                setAlertCount(prev => {
+                  const newCount = prev + 1;
+                  alert(`Multiple persons detected! Warning ${newCount}/3`);
+                  
+                  if (newCount >= 3) {
+                    clearInterval(detectionIntervalRef.current);
+                    submit(new Event('submit'));
+                  }
+                  return newCount;
+                });
+              } else if (detections.length === 0) {
+                setAlertCount(prev => {
+                  const newCount = prev + 1;
+                  alert(`No person detected! Warning ${newCount}/3`);
+                  
+                  if (newCount >= 3) {
+                    clearInterval(detectionIntervalRef.current);
+                    submit(new Event('submit'));
+                  }
+                  return newCount;
+                });  
               }
-            }, 1000);
-          }
-        };
+            }, 2000); // Check every 2 seconds
+          };
       
     
       useEffect(() => {
+        enterFullscreen();
         fetchSubjective();
         startCamera();
-      }, [loading]);
-    
+        loadFaceApiModels();
+
+        return () => {
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
+      }, []);
+     useEffect(() => {
+        if (modelsLoaded) {
+          initializeFaceDetection();
+        }
+      }, [modelsLoaded]);
+
       useEffect(() => {
         if (!loading && subjectiveQuestions.length > 0) {
           const initialFields = subjectiveQuestions.map((question) => ({
@@ -150,6 +204,9 @@ document.addEventListener('cut', function(e) {
       <div className="flex justify-between items-center mb-6">
         <div className="text-2xl font-bold">
           Quiz Timer: {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
+        </div>
+        <div className="text-red-600">
+          Warnings: {alertCount}/3
         </div>
       </div>
        {/* Main Content */}

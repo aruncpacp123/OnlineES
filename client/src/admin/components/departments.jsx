@@ -172,7 +172,7 @@ export default function Departments() {
                             <TableRow key={index}>
                               <TableCell className="font-medium">{index+1}</TableCell>
                               <TableCell>{item.dept_name}</TableCell>
-                              <TableCell className="text-right ">
+                              <TableCell className="text-right min-w-[300px] ">
                                 <Edit item={item} />
                                 <Button className="bg-red-600 mr-12" onClick={(e)=>deleteDepartment(item.dept_id)}>Delete</Button>
                               </TableCell>

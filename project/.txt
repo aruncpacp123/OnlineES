@@ -15,10 +15,10 @@ If we want old versions also keep it in another branch and deploy the latest ver
 
 #Need to Implement
 
-1.Proctoring System:(Multiple Faces and moving face away from screen)
-2.Preventing Screen Switching
-3.Copy-Paste 
-4.Approval-Based Signup System:
+1.Proctoring System:(Multiple Faces and moving face away from screen) --
+2.Preventing Screen Switching --
+3.Copy-Paste --
+4.Approval-Based Signup System -- 
 5.Analytics System for Exam Marks
 6.Resumption of Exams
 7.Face Detection System

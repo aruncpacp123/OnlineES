@@ -218,7 +218,7 @@ const fetchTeachers= async (sub_id)=>{
                               <TableCell>{item.course_name}</TableCell>
                               <TableCell> <Teachers value={item.subject_id}/> </TableCell>
 
-                              <TableCell className="text-right ">
+                              <TableCell className="text-right  min-w-[300px] ">
                                 <Assign sub_id={item.subject_id} dept_id={item.dept_id} sub_name={item.subject_name} />
                                 
                                 {/* <Button className="bg-blue-600 mr-6" >Edit</Button> */}
