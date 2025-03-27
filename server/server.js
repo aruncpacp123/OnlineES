@@ -3,10 +3,12 @@ const mysql = require("mysql");
 // const sql = require('mssql');
 const cors = require("cors");
 const bcrypt = require('bcryptjs');
+const WebSocket = require("ws");
 require('dotenv').config();
 // const { connectToDatabase, sql } = require('./db');
 const app = express();
-
+const server = require("http").createServer(app);
+const wss = new WebSocket.Server({ server });
 app.use(cors());
 app.use(express.json());
 
@@ -1306,5 +1308,642 @@ app.post('/getAssignedSubjects',(req,res)=>{
         return res.json(result)
     })
 })
+
+
+// Get exam details
+app.get('/exams/:examId', (req, res) => {
+    const examId = req.params.examId;
+    const sql = `
+      SELECT e.exam_id, e.exam_name, e.description, e.starting_date, e.ending_date, e.duration, s.subject_name
+      FROM exam e
+      JOIN subject s ON e.subject_id = s.subject_id
+      WHERE e.exam_id = ?
+    `;
+    db.query(sql, [examId], (err, data) => {
+      if (err) {
+        console.error('Error fetching exam:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (data.length > 0) {
+        return res.json(data[0]);
+      } else {
+        return res.status(404).json({ error: 'Exam not found' });
+      }
+    });
+  });
+  
+  // Update exam
+  app.put('/exams/:examId', (req, res) => {
+    const examId = req.params.examId;
+    const { exam_name, description, starting_date, ending_date, duration } = req.body;
+    const sql = `
+      UPDATE exam
+      SET exam_name = ?, description = ?, starting_date = ?, ending_date = ?, duration = ?
+      WHERE exam_id = ?
+    `;
+    db.query(sql, [exam_name, description, starting_date, ending_date, duration, examId], (err, result) => {
+      if (err) {
+        console.error('Error updating exam:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (result.affectedRows > 0) {
+        return res.json({ message: 'Exam updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'Exam not found' });
+      }
+    });
+  });
+  
+  // Delete exam
+  app.delete('/exams/:examId', (req, res) => {
+    const examId = req.params.examId;
+    const sql = 'DELETE FROM exam WHERE exam_id = ?';
+    db.query(sql, [examId], (err, result) => {
+      if (err) {
+        console.error('Error deleting exam:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (result.affectedRows > 0) {
+        return res.json({ message: 'Exam deleted successfully' });
+      } else {
+        return res.status(404).json({ error: 'Exam not found' });
+      }
+    });
+  });
+  // Get quiz questions for an exam
+app.get('/exams/:examId/quiz/questions', (req, res) => {
+    const examId = req.params.examId;
+    const sql = `
+      SELECT qq.question_id, qq.question_title, qq.option1, qq.option2, qq.option3, qq.option4, qq.answer
+      FROM quiz q
+      JOIN quiz_questions qq ON q.quiz_id = qq.quiz_id
+      WHERE q.exam_id = ?
+    `;
+    db.query(sql, [examId], (err, data) => {
+      if (err) {
+        console.error('Error fetching quiz questions:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      return res.json(data);
+    });
+  });
+  /*
+  // Add a new quiz question
+  app.post('/exams/:examId/quiz/questions', (req, res) => {
+    const examId = req.params.examId;
+    const { question_title, option1, option2, option3, option4, answer } = req.body;
+  
+    // First, get the quiz_id for the exam
+    const getQuizSql = 'SELECT quiz_id FROM quiz WHERE exam_id = ?';
+    db.query(getQuizSql, [examId], (err, quizData) => {
+      if (err) {
+        console.error('Error fetching quiz:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (quizData.length === 0) {
+        return res.status(404).json({ error: 'Quiz not found for this exam' });
+      }
+      const quizId = quizData[0].quiz_id;
+  
+      const sql = `
+        INSERT INTO quiz_questions (quiz_id, question_title, option1, option2, option3, option4, answer)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `;
+      db.query(sql, [quizId, question_title, option1, option2, option3, option4, answer], (err, result) => {
+        if (err) {
+          console.error('Error adding question:', err);
+          return res.status(500).json({ error: 'Server error' });
+        }
+        return res.json({ message: 'Question added successfully', question_id: result.insertId });
+      });
+    });
+  });
+  */
+ // Add a new quiz question and increment qno_of_questions
+app.post('/exams/:examId/quiz/questions', (req, res) => {
+    const examId = req.params.examId;
+    const { question_title, option1, option2, option3, option4, answer } = req.body;
+  
+    // Start a transaction
+    db.beginTransaction((err) => {
+      if (err) {
+        console.error('Error starting transaction:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+  
+      // Step 1: Get the quiz_id for the exam
+      const getQuizSql = 'SELECT quiz_id FROM quiz WHERE exam_id = ?';
+      db.query(getQuizSql, [examId], (err, quizData) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error('Error fetching quiz:', err);
+            res.status(500).json({ error: 'Server error' });
+          });
+        }
+        if (quizData.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({ error: 'Quiz not found for this exam' });
+          });
+        }
+        const quizId = quizData[0].quiz_id;
+  
+        // Step 2: Insert the new question
+        const insertSql = `
+          INSERT INTO quiz_questions (quiz_id, question_title, option1, option2, option3, option4, answer)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        db.query(insertSql, [quizId, question_title, option1, option2, option3, option4, answer], (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error('Error adding question:', err);
+              res.status(500).json({ error: 'Server error' });
+            });
+          }
+          const questionId = result.insertId;
+  
+          // Step 3: Increment qno_of_questions in quiz table
+          const updateSql = `
+            UPDATE quiz
+            SET qno_of_questions = qno_of_questions + 1
+            WHERE quiz_id = ?
+          `;
+          db.query(updateSql, [quizId], (err, updateResult) => {
+            if (err) {
+              return db.rollback(() => {
+                console.error('Error updating qno_of_questions:', err);
+                res.status(500).json({ error: 'Server error' });
+              });
+            }
+  
+            // Commit the transaction
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Error committing transaction:', err);
+                  res.status(500).json({ error: 'Server error' });
+                });
+              }
+              res.json({ message: 'Question added successfully', question_id: questionId });
+            });
+          });
+        });
+      });
+    });
+  });
+  // Update a quiz question
+  app.put('/exams/:examId/quiz/questions/:questionId', (req, res) => {
+    const questionId = req.params.questionId;
+    const { question_title, option1, option2, option3, option4, answer } = req.body;
+    const sql = `
+      UPDATE quiz_questions
+      SET question_title = ?, option1 = ?, option2 = ?, option3 = ?, option4 = ?, answer = ?
+      WHERE question_id = ?
+    `;
+    db.query(sql, [question_title, option1, option2, option3, option4, answer, questionId], (err, result) => {
+      if (err) {
+        console.error('Error updating question:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (result.affectedRows > 0) {
+        return res.json({ message: 'Question updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+    });
+  });
+  
+  // Delete a quiz question
+//   app.delete('/exams/:examId/quiz/questions/:questionId', (req, res) => {
+//     const questionId = req.params.questionId;
+//     const sql = 'DELETE FROM quiz_questions WHERE question_id = ?';
+//     db.query(sql, [questionId], (err, result) => {
+//       if (err) {
+//         console.error('Error deleting question:', err);
+//         return res.status(500).json({ error: 'Server error' });
+//       }
+//       if (result.affectedRows > 0) {
+//         return res.json({ message: 'Question deleted successfully' });
+//       } else {
+//         return res.status(404).json({ error: 'Question not found' });
+//       }
+//     });
+//   });
+// Delete a quiz question and decrement qno_of_questions
+app.delete('/exams/:examId/quiz/questions/:questionId', (req, res) => {
+    const examId = req.params.examId;
+    const questionId = req.params.questionId;
+  
+    // Start a transaction
+    db.beginTransaction((err) => {
+      if (err) {
+        console.error('Error starting transaction:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+  
+      // Step 1: Get the quiz_id for the exam
+      const getQuizSql = 'SELECT quiz_id FROM quiz WHERE exam_id = ?';
+      db.query(getQuizSql, [examId], (err, quizData) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error('Error fetching quiz:', err);
+            res.status(500).json({ error: 'Server error' });
+          });
+        }
+        if (quizData.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({ error: 'Quiz not found for this exam' });
+          });
+        }
+        const quizId = quizData[0].quiz_id;
+  
+        // Step 2: Delete the question
+        const deleteSql = 'DELETE FROM quiz_questions WHERE question_id = ? AND quiz_id = ?';
+        db.query(deleteSql, [questionId, quizId], (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error('Error deleting question:', err);
+              res.status(500).json({ error: 'Server error' });
+            });
+          }
+          if (result.affectedRows === 0) {
+            return db.rollback(() => {
+              res.status(404).json({ error: 'Question not found' });
+            });
+          }
+  
+          // Step 3: Decrement qno_of_questions in quiz table
+          const updateSql = `
+            UPDATE quiz
+            SET qno_of_questions = qno_of_questions - 1
+            WHERE quiz_id = ? AND qno_of_questions > 0
+          `;
+          db.query(updateSql, [quizId], (err, updateResult) => {
+            if (err) {
+              return db.rollback(() => {
+                console.error('Error updating qno_of_questions:', err);
+                res.status(500).json({ error: 'Server error' });
+              });
+            }
+  
+            // Commit the transaction
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Error committing transaction:', err);
+                  res.status(500).json({ error: 'Server error' });
+                });
+              }
+              res.json({ message: 'Question deleted successfully' });
+            });
+          });
+        });
+      });
+    });
+  });
+
+  // Get subjective questions for an exam
+app.get('/exams/:examId/subjective/questions', (req, res) => {
+    const examId = req.params.examId;
+    const sql = `
+      SELECT sq.question_id, sq.question_title, sq.mark
+      FROM subjective s
+      JOIN subjective_questions sq ON s.subjective_id = sq.subjective_id
+      WHERE s.exam_id = ?
+    `;
+    db.query(sql, [examId], (err, data) => {
+      if (err) {
+        console.error('Error fetching subjective questions:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      return res.json(data);
+    });
+  });
+  
+
+ // Add a new subjective question and increment sno_of_questions
+app.post('/exams/:examId/subjective/questions', (req, res) => {
+    const examId = req.params.examId;
+    const { question_title, mark } = req.body;
+  
+    // Start a transaction
+    db.beginTransaction((err) => {
+      if (err) {
+        console.error('Error starting transaction:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+  
+      // Step 1: Get the subjective_id for the exam
+      const getSubjectiveSql = 'SELECT subjective_id FROM subjective WHERE exam_id = ?';
+      db.query(getSubjectiveSql, [examId], (err, subjectiveData) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error('Error fetching subjective:', err);
+            res.status(500).json({ error: 'Server error' });
+          });
+        }
+        if (subjectiveData.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({ error: 'Subjective section not found for this exam' });
+          });
+        }
+        const subjectiveId = subjectiveData[0].subjective_id;
+  
+        // Step 2: Insert the new question
+        const insertSql = `
+          INSERT INTO subjective_questions (subjective_id, question_title, mark)
+          VALUES (?, ?, ?)
+        `;
+        db.query(insertSql, [subjectiveId, question_title, mark], (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error('Error adding question:', err);
+              res.status(500).json({ error: 'Server error' });
+            });
+          }
+          const questionId = result.insertId;
+  
+          // Step 3: Increment sno_of_questions in subjective table
+          const updateSql = `
+            UPDATE subjective
+            SET sno_of_questions = sno_of_questions + 1
+            WHERE subjective_id = ?
+          `;
+          db.query(updateSql, [subjectiveId], (err, updateResult) => {
+            if (err) {
+              return db.rollback(() => {
+                console.error('Error updating sno_of_questions:', err);
+                res.status(500).json({ error: 'Server error' });
+              });
+            }
+  
+            // Commit the transaction
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Error committing transaction:', err);
+                  res.status(500).json({ error: 'Server error' });
+                });
+              }
+              res.json({ message: 'Question added successfully', question_id: questionId });
+            });
+          });
+        });
+      });
+    });
+  });
+  // Update a subjective question
+  app.put('/exams/:examId/subjective/questions/:questionId', (req, res) => {
+    const questionId = req.params.questionId;
+    const { question_title, mark } = req.body;
+    const sql = `
+      UPDATE subjective_questions
+      SET question_title = ?, mark = ?
+      WHERE question_id = ?
+    `;
+    db.query(sql, [question_title, mark, questionId], (err, result) => {
+      if (err) {
+        console.error('Error updating question:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (result.affectedRows > 0) {
+        return res.json({ message: 'Question updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+    });
+  });
+  
+// Delete a subjective question and decrement sno_of_questions
+app.delete('/exams/:examId/subjective/questions/:questionId', (req, res) => {
+    const examId = req.params.examId;
+    const questionId = req.params.questionId;
+  
+    // Start a transaction
+    db.beginTransaction((err) => {
+      if (err) {
+        console.error('Error starting transaction:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+  
+      // Step 1: Get the subjective_id for the exam
+      const getSubjectiveSql = 'SELECT subjective_id FROM subjective WHERE exam_id = ?';
+      db.query(getSubjectiveSql, [examId], (err, subjectiveData) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error('Error fetching subjective:', err);
+            res.status(500).json({ error: 'Server error' });
+          });
+        }
+        if (subjectiveData.length === 0) {
+          return db.rollback(() => {
+            res.status(404).json({ error: 'Subjective section not found for this exam' });
+          });
+        }
+        const subjectiveId = subjectiveData[0].subjective_id;
+  
+        // Step 2: Delete the question
+        const deleteSql = 'DELETE FROM subjective_questions WHERE question_id = ? AND subjective_id = ?';
+        db.query(deleteSql, [questionId, subjectiveId], (err, result) => {
+          if (err) {
+            return db.rollback(() => {
+              console.error('Error deleting question:', err);
+              res.status(500).json({ error: 'Server error' });
+            });
+          }
+          if (result.affectedRows === 0) {
+            return db.rollback(() => {
+              res.status(404).json({ error: 'Question not found' });
+            });
+          }
+  
+          // Step 3: Decrement sno_of_questions in subjective table
+          const updateSql = `
+            UPDATE subjective
+            SET sno_of_questions = sno_of_questions - 1
+            WHERE subjective_id = ? AND sno_of_questions > 0
+          `;
+          db.query(updateSql, [subjectiveId], (err, updateResult) => {
+            if (err) {
+              return db.rollback(() => {
+                console.error('Error updating sno_of_questions:', err);
+                res.status(500).json({ error: 'Server error' });
+              });
+            }
+  
+            // Commit the transaction
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  console.error('Error committing transaction:', err);
+                  res.status(500).json({ error: 'Server error' });
+                });
+              }
+              res.json({ message: 'Question deleted successfully' });
+            });
+          });
+        });
+      });
+    });
+  });
+// Get teacher profile
+app.get('/teacher/profile/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const sql = `
+      SELECT user_id, user_name, user_email, user_phno,user_dob,user_gender
+      FROM users
+      WHERE user_id = ? AND user_type = 'teacher'
+    `;
+    db.query(sql, [userId], (err, data) => {
+      if (err) {
+        console.error('Error fetching teacher profile:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (data.length > 0) {
+        return res.json(data[0]);
+      } else {
+        return res.status(404).json({ error: 'Teacher profile not found' });
+      }
+    });
+  });
+  
+  // Update teacher profile
+  app.put('/teacher/profile/:userId', (req, res) => {
+    const userId = req.params.userId;
+    const { username, email, phone } = req.body;
+    const sql = `
+      UPDATE users
+      SET user_name = ?, user_email = ?, user_phno = ?
+      WHERE user_id = ? AND user_type = 'teacher'
+    `;
+    db.query(sql, [username, email, phone, userId], (err, result) => {
+      if (err) {
+        console.error('Error updating teacher profile:', err);
+        return res.status(500).json({ error: 'Server error' });
+      }
+      if (result.affectedRows > 0) {
+        return res.json({ message: 'Profile updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'Teacher profile not found' });
+      }
+    });
+  });
+  /*
+// Get students attempting the exam
+app.get("/teacher/exam/:examId/students", (req, res) => {
+    const examId = req.params.examId;
+    const sql = `
+      SELECT DISTINCT u.user_id, u.username
+      FROM users u
+      JOIN exam_attempts ea ON u.user_id = ea.student_id
+      WHERE ea.exam_id = ? AND u.user_type = 'student'
+    `;
+    db.query(sql, [examId], (err, data) => {
+      if (err) {
+        console.error("Error fetching students:", err);
+        return res.status(500).json({ error: "Server error" });
+      }
+      return res.json(data);
+    });
+  });
+  
+  // WebSocket for live video streaming
+  wss.on("connection", (ws, req) => {
+    const [_, examId, studentId] = req.url.split("/").filter(Boolean); // Parse /video/:examId/:studentId
+    console.log(`WebSocket connection for exam ${examId}, student ${studentId}`);
+  
+    // Simulate live video feed (replace with actual camera feed logic)
+    const sendFrame = () => {
+      const frame = Buffer.from(" Simulated frame data "); // Placeholder for actual video frame
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(frame);
+      }
+    };
+  
+    const interval = setInterval(sendFrame, 1000); // Send frame every second
+  
+    ws.on("close", () => {
+      clearInterval(interval);
+      console.log(`WebSocket closed for student ${studentId}`);
+    });
+  
+    ws.on("error", (err) => {
+      console.error(`WebSocket error for student ${studentId}:`, err);
+    });
+  });*/
+// Store active students per exam
+const activeStudents = new Map(); // Map<examId, Set<user_id>>
+
+// WebSocket for student presence and video
+wss.on("connection", (ws, req) => {
+  const urlParts = req.url.split("/").filter(Boolean);
+  const [type, examId, userId] = urlParts;
+
+  if (type === "student") {
+    // Student connects to indicate presence
+    if (!activeStudents.has(examId)) {
+      activeStudents.set(examId, new Set());
+    }
+    activeStudents.get(examId).add(userId);
+
+    // Fetch student details
+    const sql = "SELECT user_id, username FROM users WHERE user_id = ? AND user_type = 'student'";
+    db.query(sql, [userId], (err, data) => {
+      if (err) console.error("Error fetching student:", err);
+      else if (data.length > 0) {
+        const student = data[0];
+        // Notify all teacher clients for this exam
+        wss.clients.forEach((client) => {
+          if (
+            client.readyState === WebSocket.OPEN &&
+            client.url === `/teacher/exam/${examId}/live`
+          ) {
+            const students = Array.from(activeStudents.get(examId)).map((id) => ({
+              user_id: id,
+              username: student.username,
+            }));
+            client.send(JSON.stringify(students));
+          }
+        });
+      }
+    });
+
+    ws.on("close", () => {
+      activeStudents.get(examId)?.delete(userId);
+      if (activeStudents.get(examId)?.size === 0) activeStudents.delete(examId);
+      // Notify teachers of updated student list
+      wss.clients.forEach((client) => {
+        if (
+          client.readyState === WebSocket.OPEN &&
+          client.url === `/teacher/exam/${examId}/live`
+        ) {
+          const students = Array.from(activeStudents.get(examId) || []).map((id) => ({
+            user_id: id,
+            username: student.username, // Note: This assumes username persists; adjust if needed
+          }));
+          client.send(JSON.stringify(students));
+        }
+      });
+    });
+  } else if (type === "video") {
+    // Simulate video feed for student
+    const interval = setInterval(() => {
+      const frame = Buffer.from(" Simulated frame data "); // Placeholder
+      if (ws.readyState === WebSocket.OPEN) ws.send(frame);
+    }, 1000);
+    ws.on("close", () => clearInterval(interval));
+  } else if (type === "teacher") {
+    // Teacher connects to monitor live students
+    ws.url = req.url; // Store URL for filtering
+    ws.on("open", () => {
+      const students = Array.from(activeStudents.get(examId) || []).map((id) => ({
+        user_id: id,
+        username: "Unknown", // Placeholder; fetch from DB if needed
+      }));
+      ws.send(JSON.stringify(students));
+    });
+  }
+});
+
+// Optional: Fallback API for initial student list (if needed)
 
 app.listen(PORT)

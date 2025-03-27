@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../components/navbar'
 import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
 import ExamList from '../components/ExamList'
@@ -7,6 +7,7 @@ import ExamForm from '../components/ExamForm'
 import { Student } from '../components/student'
 import { Subjects } from '../components/Subjects'
 import { Profile } from '../components/profile'
+import ListExam from '../components/New/ListExam'
 
 export default function Home() {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ logout();
                         <ExamForm />
                       </div>
                       <div className='mt-5 m-7'>
-                        <ExamList />
+                        <ListExam />
                       </div>
                   </div>
               </TabsContent>

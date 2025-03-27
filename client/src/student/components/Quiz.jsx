@@ -1,204 +1,3 @@
-// import React, { useEffect, useState } from 'react';
-// import { useLocation, useNavigate } from 'react-router-dom';
-// import * as faceapi from 'face-api.js';
-// import {
-//   Card,
-//   CardContent,
-//   CardFooter,
-//   CardHeader,
-//   CardTitle,
-// } from "@/components/ui/card";
-// import { Button } from '@/components/ui/button';
-// import { Label } from "@/components/ui/label";
-// import { Textarea } from '@/components/ui/textarea';
-// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-// import axios from 'axios';
-
-// export default function Quiz() {
-//   const location = useLocation();
-//   const navigate = useNavigate();
-
-//   const quiz_id = location.state?.quiz_id;
-//   const subjective_id = location.state?.subjective_id;
-//   const qno = location.state?.qno;
-//   const sno = location.state?.sno;
-//   const quizMark = location.state?.quizMark;
-//   const exam_id = location.state?.exam_id;
-//   const duration = location.state?.duration;
-
-//   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: duration, seconds: 0 });
-
-//   const usernames = JSON.parse(sessionStorage.getItem('username'));
-//   const regno = usernames.regno;
-//   const [quizQuestions, setQuizQuestions] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [formFields, setFormFields] = useState([]);
-//   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-
-//   const handleRadioChange = (index, value) => {
-//     const updatedFields = [...formFields];
-//     updatedFields[index].answer = value;
-//     setFormFields(updatedFields);
-//   };
-
-//   const submit = async (e) => {
-//     e.preventDefault();
-//     try {
-//     const res = await axios.post(`${import.meta.env.VITE_URL}/attemptQuiz/${regno}/${quiz_id}/${quizMark}/${exam_id}`, formFields);
-//       if (subjective_id) {
-//         navigate('/student/exam/subjective',{ state: { subjective_id,sno,exam_id,quiz_id,duration} })
-//       } else {
-//         navigate('/student');
-//       }
-//       console.log(res.data);
-//     } catch (err) {
-//       console.log(err);
-//     }
-//   };
-
-//   const fetchQuiz = async () => {
-//     try {
-//       const res = await axios.post(`${import.meta.env.VITE_URL}/fetchQuizQuestions`, { quiz_id });
-//       setTimeout(() => {
-//         setQuizQuestions(res.data);
-//         setLoading(false);
-//       }, 2000);
-//     } catch (err) {
-//       console.error("Error fetching questions:", err);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchQuiz();
-//   }, [loading]);
-
-//   useEffect(() => {
-//     if (!loading && quizQuestions.length > 0) {
-//       const initialFields = quizQuestions.map((question) => ({
-//         question_id: question.question_id,
-//         answer: '',
-//         correctanswer:question.answer
-//       }));
-//       setFormFields(initialFields);
-//     }
-//   }, [quizQuestions, loading]);
-
-//   // Timer effect
-//   useEffect(() => {
-//     const timer = setInterval(() => {
-//       setTimeLeft((prevTime) => {
-//         const { hours, minutes, seconds } = prevTime;
-//         if (hours === 0 && minutes === 0 && seconds === 0) {
-//           clearInterval(timer);
-//           submit(new Event('submit')); // Automatically submit form when timer ends
-//           return prevTime;
-//         }
-
-//         if (seconds > 0) {
-//           return { ...prevTime, seconds: seconds - 1 };
-//         } else if (minutes > 0) {
-//           return { hours, minutes: minutes - 1, seconds: 59 };
-//         } else if (hours > 0) {
-//           return { hours: hours - 1, minutes: 59, seconds: 59 };
-//         }
-//         return prevTime;
-//       });
-//     }, 1000);
-
-//     return () => clearInterval(timer); // Cleanup interval on component unmount
-//   }, []);
-
-//   return (
-//     <>
-//       <div className="grid grid-cols-9 ">
-//         <div className="flex items-center justify-center col-span-2 bg-slate-200 md:min-h-screen">
-//         <div className="text-3xl border-b-2">
-//             {`${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
-//           </div>
-//         </div>
-//         <div className="flex items-center justify-center col-span-5 bg-slate-100">
-//           <form onSubmit={submit} className='text-center'>
-//             {loading ? (
-//               <div>Loading....</div>
-//             ) : (
-//               <Card className="mb-7 min-w-[600px]">
-//                 <CardHeader>
-//                   <CardTitle className="text-center">
-//                     Question {currentQuestionIndex + 1}
-//                   </CardTitle>
-//                 </CardHeader>
-//                 <CardContent className="space-y-2">
-//                   <div className="space-y-1 text-left">
-//                     <Label htmlFor={`question-${currentQuestionIndex}`} className="mb-9"></Label>
-//                     <Textarea
-//                       id={`question-${currentQuestionIndex}`}
-//                       value={quizQuestions[currentQuestionIndex]?.question_title || ""}
-//                       readOnly
-//                       className="mt-6"
-//                     />
-//                   </div>
-//                   <RadioGroup
-//                     value={formFields[currentQuestionIndex]?.answer}
-//                     onValueChange={(value) => handleRadioChange(currentQuestionIndex, value)}
-//                   >
-//                     {['option1', 'option2', 'option3', 'option4'].map((opt, optIndex) => (
-//                       <div className="space-y-1 text-left" key={optIndex}>
-//                         <div className="flex items-center space-x-2">
-//                           <RadioGroupItem
-//                             value={optIndex + 1}
-//                             id={`${opt}-${currentQuestionIndex}`}
-//                           />
-//                           <Label htmlFor={`${opt}-${currentQuestionIndex}`}>
-//                             {quizQuestions[currentQuestionIndex]?.[opt] || ""}
-//                           </Label>
-//                         </div>
-//                       </div>
-//                     ))}
-//                   </RadioGroup>
-//                 </CardContent>
-//                 <CardFooter className="flex justify-between">
-//                   <input type="button"
-//                     disabled={currentQuestionIndex === 0}
-//                     onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
-//                     value="previous"
-//                   />
-                    
-                  
-//                   <input type="button"
-//                     disabled={currentQuestionIndex === quizQuestions.length - 1}
-//                     onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
-//                     value="next"
-
-//                   />        
-                
-//                 </CardFooter>
-//               </Card>
-//             )}
-//             {currentQuestionIndex === quizQuestions.length - 1 && (
-//               <Button className="mt-8 " type="submit">SUBMIT</Button>
-//             )}
-//           </form>
-//         </div>
-//         <div className="col-span-2 bg-slate-200">
-
-//         </div>
-//       </div>
-//     </>
-//   );
-// }
-// 
-
-
-
-
-
-
-
-
-
-
-
-
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -238,6 +37,8 @@ export default function Quiz() {
 
   const usernames = JSON.parse(sessionStorage.getItem('username'));
   const regno = usernames.regno;
+  const userId = usernames.id;
+
 
   const handleRadioChange = (index, value) => {
     const updatedFields = [...formFields];
@@ -330,7 +131,7 @@ export default function Quiz() {
           
           if (newCount >= 3) {
             clearInterval(detectionIntervalRef.current);
-            submit(new Event('submit'));
+            //submit(new Event('submit'));
           }
           return newCount;
         });
@@ -370,7 +171,13 @@ export default function Quiz() {
       initializeFaceDetection();
     }
   }, [modelsLoaded]);
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:5000/student/${exam_id}/${userId}`);
+    ws.onopen = () => console.log("Student WebSocket opened");
+    ws.onclose = () => console.log("Student WebSocket closed");
 
+    return () => ws.close();
+  }, [exam_id, userId]);
   useEffect(() => {
     if (!loading && quizQuestions.length > 0) {
       const initialFields = quizQuestions.map((question) => ({

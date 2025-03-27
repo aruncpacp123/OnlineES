@@ -14,6 +14,7 @@ import { Profile } from "./teacher/components/profile";
 import PrivateRoute from "./PrivateRoute"; // Import the updated PrivateRoute
 import FaceDetectionComponent from "./student/components/Test";
 import Demo from "./components/ui/Demo";
+import ManageExam from "./teacher/components/New/ManageExam";
 
 function App() {
   return (
@@ -41,6 +42,14 @@ function App() {
           element={
             <PrivateRoute allowedRoles={["teacher"]}>
               <TeacherHome />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/teacher/exam/:examid"
+          element={
+            <PrivateRoute allowedRoles={["teacher"]}>
+              <ManageExam />
             </PrivateRoute>
           }
         />

@@ -63,7 +63,7 @@ export default function () {
                   <TableCell>{item.subject_name}</TableCell>
 
                   <TableCell>{item.description}</TableCell>
-                  <TableCell>{item.starting_date}</TableCell>
+                  <TableCell>{Date(item.starting_date)}</TableCell>
                   <TableCell className="text-right ">
                     <Button className="bg-red-600 mr-12" onClick={(e)=>attempt(item.quiz_id,item.subjective_id,item.qno_of_questions,item.sno_of_questions,item.mark,item.exam_id,item.duration)}>Attempt</Button>
                   </TableCell>

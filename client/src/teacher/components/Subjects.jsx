@@ -1,87 +1,66 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@/components/ui/table"
-  import { Button } from "@/components/ui/button"
-  import { Input } from "@/components/ui/input"
-  import { Label } from "@/components/ui/label"
-  import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-  } from "@/components/ui/dialog"
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import axios from 'axios';
 
-  import axios from 'axios'
-  
 export function Subjects() {
- 
-  const [subject,setSubject] = useState([])
- 
+  const [subject, setSubject] = useState([]);
   const usernames = JSON.parse(sessionStorage.getItem('username'));
   const user_id = usernames?.id;
-  
 
-
-  const fetchSubjects= async ()=>{
-      try {
-          const res = await axios.post(`${import.meta.env.VITE_URL}/getAssignedSubjects`,{user_id});
-          setSubject(res.data);
-        } catch (err) {
-          console.error("Error fetching Student Details:", err);
-        }
+  const fetchSubjects = async () => {
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_URL}/getAssignedSubjects`, { user_id });
+      setSubject(res.data);
+    } catch (err) {
+      console.error("Error fetching Subject Details:", err);
+    }
   };
 
   useEffect(() => {
     fetchSubjects();
   }, []);
-  
-  
-  return (
-    <div className=''>
-        <div className="flex justify-end mr-5">
-            
-        </div>
-        <div className='mt-5 m-7'>
-            <Table className="">
-                <TableCaption>A list of subjects.</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">No.</TableHead>
-                    <TableHead className="w-[230px]">Course </TableHead>
-                    <TableHead className="w-[200px]">Subject</TableHead>
-                
 
-                  </TableRow>
-                </TableHeader>
-                <TableBody >
-                        {
-                            subject.map((item,index)=>(
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{index+1}</TableCell>
-                              <TableCell>{item.course_name}</TableCell>
-                              <TableCell>{item.subject_name}</TableCell>
-                              
-                            </TableRow>
-                            ))
-                        }
-                </TableBody>
-                
-            </Table>
-        </div>
-        {/* <div className="flex justify-center mr-5">
-            <Button className="bg-green-400" >ADD</Button>
-        </div> */}
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Assigned Subjects</h1>
+        {/* Optional: Add a button here if you want to include additional functionality */}
+        {/* <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+          + Add Subject
+        </Button> */}
+      </div>
+
+      {/* Table Section */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <Table>
+          <TableCaption className="text-gray-600 mb-4">A list of subjects assigned to you.</TableCaption>
+          <TableHeader>
+            <TableRow className="bg-gray-50">
+              <TableHead className="w-[100px] font-semibold text-gray-700">#</TableHead>
+              <TableHead className="w-[300px] font-semibold text-gray-700">Course</TableHead>
+              <TableHead className="w-[300px] font-semibold text-gray-700">Subject</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {subject.map((item, index) => (
+              <TableRow key={index} className="hover:bg-gray-50 transition duration-200">
+                <TableCell className="font-medium text-gray-800">{index + 1}</TableCell>
+                <TableCell className="text-gray-800">{item.course_name}</TableCell>
+                <TableCell className="text-gray-800">{item.subject_name}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
-    
-  )
+  );
 }
