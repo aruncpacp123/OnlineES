@@ -8,8 +8,12 @@ import TeacherHome from "./teacher/pages/teacherHome";
 import ExamForm from "./teacher/components/ExamForm";
 import QuizForm from "./teacher/components/quizForm";
 import SubjectiveForm from "./teacher/components/SubjectiveForm";
-import Quiz from "./student/components/Quiz";
-import Subjective from "./student/components/Subjective";
+// import Quiz from "./student/components/Quiz";
+import Quiz from "./student/components/New/Quiz";
+// import Quiz2 from "./student/components/New/Quiz2";
+// import Subjective from "./student/components/Subjective";
+import Subjective from "./student/components/New/Subjective";
+
 import { Profile } from "./teacher/components/profile";
 import PrivateRoute from "./PrivateRoute"; // Import the updated PrivateRoute
 import FaceDetectionComponent from "./student/components/Test";
@@ -99,7 +103,7 @@ function App() {
           path="/student/exam/quiz"
           element={
             <PrivateRoute allowedRoles={["student"]}>
-              <Quiz />
+              <Quiz/>
             </PrivateRoute>
           }
         />
@@ -123,5 +127,5 @@ function App() {
     </Router>
   );
 }
-
+//Here Make a private  route and inside that file check whether user is login route it to '/user' so evry component should a childof yid except login.Then make anaother three router files to chcek unautherized access.wrap student components insdie student route component and if not accssed navigate to 403 unautherized
 export default App;

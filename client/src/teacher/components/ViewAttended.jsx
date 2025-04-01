@@ -4,18 +4,20 @@ import { Button } from "@/components/ui/button"
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ViewAnswers from './ViewAnswers';
-
+import { useParams } from 'react-router-dom';
 import { List } from 'lucide-react';
-export default function({details}) {
-
+export default function() {
+    const { examid } = useParams();
     const [exam,setExam] = useState([]);
     const [loading,setLoading] = useState(true);
     const [loading2,setLoading2] = useState(true);
+    
 
-
-    const exam_id = details.exam_id;
-    const quiz_id = details.quiz_id;
-    const subjective_id = details.subjective_id;
+    // const exam_id = details.exam_id;
+    // const quiz_id = details.quiz_id;
+    // const subjective_id = details.subjective_id;
+    const [quiz_id,setQuizId] = useState(0);
+    const [subjective_id,setSubjectiveId] = useState(0);
 
     const [quiz,setQuiz] = useState(false);
     const [sub,setSub] = useState(false);
@@ -32,13 +34,34 @@ export default function({details}) {
         setList(false);
         setMore(true);
         setAnswer(examDetails);
+        console.log(examDetails);
 
         // document.getElementById('inner').innerHTML=`<ViewAnswers />`;
     };
+    const fetchExam = async ()=>{
+      const res = await axios.post(`${import.meta.env.VITE_URL}/fetchExamDetails`,{examid});
+      setQuizId(res.data[0].quiz_id);
+      setSubjectiveId(res.data[0].subjective_id);
+      console.log(examid)
+      if(res.data[0].quiz_id !=0 && res.data[0].subjective_id !=0 && res.data[0].quiz_id !=null && res.data[0].subjective_id !=null){
+        setBoth(true);
+        console.log(res.data[0])
+        fetchBothAttendeess();
+      }
+      else if(res.data[0].quiz_id !=0 && res.data[0].quiz_id !=null){
+          setQuiz(true);
+          fetchQuizAttendees();
+      }
+      else{
+          setSub(true);
+          console.log("first")
+          fetchSubjectiveAttendees();
+      }
 
+    }
     const fetchQuizAttendees= async ()=>{
         try {
-            console.log(details)
+            // console.log(details)
             const res = await axios.post(`${import.meta.env.VITE_URL}/getQuizAttendees`,{quiz_id});
             setTimeout(() => {
                 setExam(res.data);
@@ -50,7 +73,7 @@ export default function({details}) {
     };
     const fetchSubjectiveAttendees= async ()=>{
         try {
-            console.log(details)
+            console.log("details")
             const res = await axios.post(`${import.meta.env.VITE_URL}/getSubjectiveAttendees`,{subjective_id});
             setTimeout(() => {
                 setExam(res.data);
@@ -62,8 +85,9 @@ export default function({details}) {
     };
     const fetchBothAttendeess= async ()=>{
         try {
-            console.log(details)
-            const res = await axios.post(`${import.meta.env.VITE_URL}/getBoth`,{exam_id});
+            // console.log(details)
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getBoth`,{examid});
+            console.log(res.data)
             setTimeout(() => {
                 setExam(res.data.attendees);
                 setMarks(res.data.marks);
@@ -89,7 +113,7 @@ export default function({details}) {
     };
     const fetchBothAttendees = async () => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_URL}/getBothAttendees`, { exam_id });
+            const res = await axios.post(`${import.meta.env.VITE_URL}/getBothAttendees`, {   });
             setExam(res.data);
             setLoading(false);
 
@@ -110,18 +134,7 @@ export default function({details}) {
         }
     };
     useEffect(()=>{
-        if(quiz_id !=0 && subjective_id !=0){
-            setBoth(true);
-            fetchBothAttendeess();
-        }
-        else if(quiz_id !=0){
-            setQuiz(true);
-            fetchQuizAttendees();
-        }
-        else{
-            setSub(true);
-            fetchSubjectiveAttendees();
-        }
+        fetchExam();
     },[loading,answer]);
 
       
@@ -222,6 +235,9 @@ export default function({details}) {
             </TableBody>
         </Table>
         </>
+        }
+        {
+          more&&!list && <ViewAnswers answer={answer} />
         }
     </div>
   )

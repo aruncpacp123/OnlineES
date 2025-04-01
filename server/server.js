@@ -3,15 +3,43 @@ const mysql = require("mysql");
 // const sql = require('mssql');
 const cors = require("cors");
 const bcrypt = require('bcryptjs');
+const util = require('util');
+const router = express.Router();
 const WebSocket = require("ws");
+const multer = require('multer');
+const path = require('path');
+
+const { body, validationResult } = require('express-validator');
+// const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+
+
+
+// const { Configuration, OpenAIApi } = require('openai');
+// const openaiConfig = new Configuration({
+//   apiKey: process.env.OPENAI_API_KEY,
+// });
+// const openai = new OpenAIApi(openaiConfig);
 require('dotenv').config();
+
 // const { connectToDatabase, sql } = require('./db');
 const app = express();
 const server = require("http").createServer(app);
 const wss = new WebSocket.Server({ server });
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
+// if (!process.env.OPENAI_API_KEY) {
+//   throw new Error('Missing OpenAI API key. Please set OPENAI_API_KEY in your .env file');
+// }
+
+// const openai = new OpenAI({
+//   apiKey: process.env
+// .OPENAI_API_KEY
+// });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY); // Store API key in environment variables
 const DB_HOST = process.env.DB_HOST;
 const DB_USER = process.env.DB_USER;
 const DB_PASSWORD = process.env.DB_PASSWORD;
@@ -37,6 +65,272 @@ db.connect((err) => {
     }
     console.log('Database connected successfully!');
   });
+  db.query = util.promisify(db.query);
+  // Configure storage for malpractice images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, 'uploads/malpractice/');
+  },
+  filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, `malpractice-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, 'uploads/avatars/');
+  },
+  filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, `avatar-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({ storage });
+const avatarUpload = multer({ 
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+          cb(null, true);
+      } else {
+          cb(new Error('Only image files are allowed!'), false);
+      }
+  }
+});
+// WebSocket connection for real-time monitoring
+wss.on('connection', (ws, req) => {
+  const urlParams = new URLSearchParams(req.url.split('?')[1]);
+  const examId = urlParams.get('/student');
+  const studentId = urlParams.get('studentId');
+  
+  console.log(`New WebSocket connection for exam ${examId}, student ${studentId}`);
+  
+  ws.on('close', () => {
+      console.log(`WebSocket closed for exam ${examId}, student ${studentId}`);
+  });
+});
+app.post('/getStudentDetails2', (req, res) => {
+  const { user_id } = req.body;
+  
+  if (!user_id) {
+      return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  const sql = `
+      SELECT u.user_id, u.user_name, u.user_email, u.user_regno, u.user_phno, 
+             u.user_gender, u.user_dob, u.avatar_url, s.current_sem, c.course_name
+      FROM users u
+      JOIN student s ON u.user_id = s.student_id
+      JOIN course c ON s.course_id = c.course_id
+      WHERE u.user_id = ?
+  `;
+  
+  db.query(sql, [user_id], (err, results) => {
+      if (err) {
+          console.error('Error fetching student details:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      if (results.length === 0) {
+          return res.status(404).json({ error: 'Student not found' });
+      }
+
+      const student = results[0];
+      res.json({
+          success: true,
+          data: {
+              id: student.user_id,
+              name: student.user_name,
+              email: student.user_email,
+              regno: student.user_regno,
+              phone: student.user_phno,
+              gender: student.user_gender,  
+              dob: student.user_dob,
+              semester: student.current_sem,
+              course: student.course_name,
+              avatar_url: student.avatar_url ? `${req.protocol}://${req.get('host')}/${student.avatar_url}` : null
+          }
+      });
+  });
+});
+
+app.post('/updateStudentDetails', [
+  body('user_id').isInt().withMessage('Invalid user ID'),
+  body('name')
+      .trim()
+      .notEmpty().withMessage('Name is required')
+      .isLength({ max: 100 }).withMessage('Name must be less than 100 characters'),
+  body('email')
+      .trim()
+      .notEmpty().withMessage('Email is required')
+      .isEmail().withMessage('Invalid email format')
+      .isLength({ max: 50 }).withMessage('Email must be less than 50 characters'),
+  body('phone')
+      .trim()
+      .notEmpty().withMessage('Phone number is required')
+      .isMobilePhone().withMessage('Invalid phone number'),
+  body('gender')
+      .trim()
+      .notEmpty().withMessage('Gender is required')
+      .isIn(['Male', 'Female', 'Other']).withMessage('Invalid gender value'),
+  body('dob')
+      .trim()
+      .notEmpty().withMessage('Date of birth is required')
+      .isDate().withMessage('Invalid date format')
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { user_id, name, email, phone, gender, dob } = req.body;
+  
+  // Check if user exists and is a student
+  const checkSql = 'SELECT 1 FROM users u JOIN student s ON u.user_id = s.student_id WHERE u.user_id = ?';
+  
+  db.query(checkSql, [user_id], (err, results) => {
+      if (err) {
+          console.error('Error checking student:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      
+      if (results.length === 0) {
+          return res.status(404).json({ error: 'Student not found' });
+      }
+
+      // Update student details
+      const updateSql = `
+          UPDATE users 
+          SET user_name = ?, user_email = ?, user_phno = ?, user_gender = ?, user_dob = ?
+          WHERE user_id = ?
+      `;
+      
+      db.query(updateSql, [name, email, phone, gender, dob, user_id], (err, result) => {
+          if (err) {
+              console.error('Error updating student:', err);
+              return res.status(500).json({ error: 'Internal server error' });
+          }
+          
+          res.json({
+              success: true,
+              message: 'Student details updated successfully'
+          });
+      });
+  });
+});
+
+app.post('/uploadAvatar', avatarUpload.single('avatar'), (req, res) => {
+  const { user_id } = req.body;
+  const avatarPath = req.file?.path;
+
+  if (!avatarPath) {
+      return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  if (!user_id) {
+      return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  const sql = 'UPDATE users SET avatar_url = ? WHERE user_id = ?';
+  
+  db.query(sql, [avatarPath, user_id], (err, result) => {
+      if (err) {
+          console.error('Error updating avatar:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      
+      res.json({
+          success: true,
+          message: 'Avatar uploaded successfully',
+          avatar_url: `${req.protocol}://${req.get('host')}/${avatarPath}`
+      });
+  });
+});
+// Malpractice logging endpoint
+app.post('/logMalpractice', upload.single('image'), (req, res) => {
+  const { exam_id, student_id, type } = req.body;
+  const image_path = req.file ? req.file.path : null;
+
+  const sql = `
+      INSERT INTO malpractice_logs 
+      (exam_id, student_id, type, image_path, created_at) 
+      VALUES (?, ?, ?, ?, NOW())
+  `;
+  
+  db.query(sql, [exam_id, student_id, type, image_path], (err, result) => {
+      if (err) {
+          console.error('Error logging malpractice:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      
+      // Notify all connected clients about the malpractice
+      wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                  type: 'MALPRACTICE',
+                  examId: exam_id,
+                  studentId: student_id,
+                  malpracticeType: type
+              }));
+          }
+      });
+      
+      res.status(201).json({ success: true, id: result.insertId });
+  });
+});
+
+// Get malpractice logs for an exam
+app.get('/malpracticeLogs/:examId', (req, res) => {
+  const { examId } = req.params;
+  
+  const sql = `
+      SELECT ml.*, s.name as student_name, s.regno
+      FROM malpractice_logs ml
+      JOIN students s ON ml.student_id = s.id
+      WHERE ml.exam_id = ?
+      ORDER BY ml.created_at DESC
+  `;
+  
+  db.query(sql, [examId], (err, results) => {
+      if (err) {
+          console.error('Error fetching malpractice logs:', err);
+          return res.status(500).json({ error: 'Internal server error' });
+      }
+      
+      // Convert image paths to URLs
+      const logs = results.map(log => ({
+          ...log,
+          image_url: log.image_path ? `${req.protocol}://${req.get('host')}/${log.image_path}` : null
+      }));
+      
+      res.json(logs);
+  });
+});
+// Create malpractice logs table if not exists (for initial setup)
+app.get('/setupMalpracticeTable', (req, res) => {
+  const sql = `
+      CREATE TABLE IF NOT EXISTS malpractice_logs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          exam_id INT NOT NULL,
+          student_id INT NOT NULL,
+          type VARCHAR(50) NOT NULL,
+          image_path VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          resolved BOOLEAN DEFAULT FALSE,
+          FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+          FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+      )
+  `;
+  
+  db.query(sql, (err, result) => {
+      if (err) {
+          console.error('Error creating malpractice_logs table:', err);
+          return res.status(500).json({ error: 'Failed to create table' });
+      }
+      res.json({ success: true, message: 'Table created or already exists' });
+  });
+});
 
 // let dbPool;
 // (async () => {
@@ -683,7 +977,7 @@ app.post('/createExam', (req, res) => {
         req.body.duration,
         req.body.teacher,
     ];
-
+    console.log(valuesExam);
     db.query(sqlExam, valuesExam, (err, result) => {
         if (err) return res.json({ message: 'Some Error Occurred in exam: ' + err });
 
@@ -811,15 +1105,26 @@ app.post('/addSubjectiveQuestions/:subjective_id', (req, res) => {
 
 
 app.post('/fetchExams',(req,res)=>{
+  const now=Date.now();
     // sql ="select * from exam inner join subject on exam.subject_id = subject.subject_id inner join course on subject.course_id = course.course_id inner join quiz on quiz.quiz_id = exam.quiz_id inner join subjective on subjective.subjective_id = exam.subjective_id where subject.course_id = ? and subject.course_sem=?";
     // sql = "SELECT * FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id INNER JOIN course ON subject.course_id = course.course_id LEFT JOIN quiz ON quiz.quiz_id = exam.quiz_id LEFT JOIN subjective ON subjective.subjective_id = exam.subjective_id WHERE subject.course_id = ? AND subject.course_sem = ?";
-    sql="SELECT exam.exam_id,exam.exam_name,exam.description,exam.subject_id,exam.quiz_id,exam.subjective_id,exam.starting_date,exam.ending_date,exam.duration,subject.subject_name,quiz.mark,quiz.qno_of_questions,subjective.sno_of_questions FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id INNER JOIN course ON subject.course_id = course.course_id LEFT JOIN quiz ON quiz.quiz_id = exam.quiz_id LEFT JOIN subjective ON subjective.subjective_id = exam.subjective_id WHERE subject.course_id = ? AND subject.course_sem = ?";
-    db.query(sql,[req.body.course_id,req.body.semester],(err,result)=>{
+    sql="SELECT exam.exam_id,exam.exam_name,exam.description,exam.subject_id,exam.quiz_id,exam.subjective_id,exam.starting_date,exam.ending_date,exam.duration,subject.subject_name,quiz.mark,quiz.qno_of_questions,subjective.sno_of_questions FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id INNER JOIN course ON subject.course_id = course.course_id LEFT JOIN quiz ON quiz.quiz_id = exam.quiz_id LEFT JOIN subjective ON subjective.subjective_id = exam.subjective_id WHERE subject.course_id = ? AND subject.course_sem = ? AND exam.ending_date>= ?";
+    db.query(sql,[req.body.course_id,req.body.semester,now],(err,result)=>{
         if(err)
             return res.json({message:'Some Error Occured' + err})
         return res.json(result)
     })
 })
+app.post('/fetchExamDetails',(req,res)=>{
+  sql ="select * from exam where exam_id=?";
+  db.query(sql,[req.body.examid],(err,result)=>{
+      if(err)
+          return res.json({message:'Some Error Occured' + err})
+      return res.json(result)
+  })
+})
+
+
 app.post('/fetchQuizQuestions',(req,res)=>{
     sql ="select * from quiz_questions where quiz_id=?";
     db.query(sql,[req.body.quiz_id],(err,result)=>{
@@ -837,9 +1142,10 @@ app.post('/attemptQuiz/:regno/:quiz_id/:quizMark/:exam_id', (req, res) => {
         question.answer,
         question.correctanswer,
     ]);
+    console.log(req.body)
     let correct=0,wrong=0;
     total.forEach(question => {
-        if(question[1] === question[2])//question.answer === question.correctanswer
+        if(Number(question[1]) === question[2])//question.answer === question.correctanswer
             correct++;
         else
             wrong++;
@@ -862,8 +1168,8 @@ app.post('/attemptQuiz/:regno/:quiz_id/:quizMark/:exam_id', (req, res) => {
             return res.json({ message: 'An error occurred: ' + err });
         }
         else{
-            const sql2 = "insert into exam_result (exam_id,student_regno,quiz_mark,subjective_mark) values (?,?,?,?)";
-            const value2=[req.params.exam_id,req.params.regno,totalMark,-2];
+            const sql2 = "insert into exam_result (exam_id,student_regno,quiz_mark,subjective_mark,total) values (?,?,?,?,?)";
+            const value2=[req.params.exam_id,req.params.regno,totalMark,-2,totalMark];
             console.log(value2);
             db.query(sql2,value2,(err,result)=>{
                 if(err)
@@ -882,10 +1188,10 @@ app.post('/fetchSubjectiveQuestions',(req,res)=>{
         return res.json(result)
     })
 })
-
+/*
 app.post('/attemptSubjective/:regno/:subjective_id/:quiz_id/:exam_id', (req, res) => {
     const sql = "INSERT INTO `subjective_answer` (`question_id`, `student_regno`, `answer`,`mark`) VALUES ?";
-
+    console.log(req.body);
     const values = req.body.map(question => [
         question.question_id,
         req.params.regno,
@@ -906,6 +1212,10 @@ app.post('/attemptSubjective/:regno/:subjective_id/:quiz_id/:exam_id', (req, res
                     console.log("Error inserting to result")
             })
             if(req.params.quiz_id == null || req.params.quiz_id==0){
+                console.log(req.params.exam_id)
+                console.log(req.params.regno)
+
+                
                 const sql2 = "insert into exam_result (exam_id,student_regno,quiz_mark,subjective_mark) values (?,?,?,?)";
                 const value2=[req.params.exam_id,req.params.regno,-1,-1];
                 db.query(sql2,value2,(err,result)=>{
@@ -927,7 +1237,279 @@ app.post('/attemptSubjective/:regno/:subjective_id/:quiz_id/:exam_id', (req, res
         return res.json({ message: 'Answers added successfully' });
     });
 });
+*/
 
+app.post('/attemptSubjective/:regno/:subjective_id/:quiz_id/:exam_id', async (req, res) => {
+  try {
+      // 1. Get questions with their max marks
+      const questions = await db.query(
+          'SELECT question_id, question_title, mark FROM subjective_questions WHERE subjective_id = ?',
+          [req.params.subjective_id]
+      );
+      
+      // 2. Prepare answers with questions
+      const answersWithQuestions = req.body.map(answer => ({
+          ...answer,
+          question_text: questions.find(q => q.question_id === answer.question_id)?.question_title || '',
+          max_mark: questions.find(q => q.question_id === answer.question_id)?.mark || 0
+      }));
+      // 3. Evaluate answers using Gemini
+      const evaluatedAnswers = await Promise.all(
+        answersWithQuestions.map(async (item) => {
+            if (item.max_mark <= 0) return { ...item, mark: 0 };
+
+            try {
+                const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro-exp-03-25" });
+                const prompt = `Evaluate this answer on a scale of 0 to ${item.max_mark}. Only respond with a number.\n\nQuestion: ${item.question_text}\nAnswer: ${item.answer}\n\nScore (0-${item.max_mark}):`;
+                
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text().trim();
+                
+                // Extract numeric score (Gemini might return text, so we parse it)
+                const score = parseFloat(text.match(/\d+/)?.[0]) || 0;
+                return { ...item, mark: Math.min(Math.max(0, score), item.max_mark) };
+            } catch (error) {
+                console.error("Gemini error:", error);
+                return { ...item, mark: 0 }; // Fallback to 0 if API fails
+            }
+        })
+    );
+      /*
+      // 3. Evaluate each answer using AI
+      const evaluatedAnswers = await Promise.all(
+          answersWithQuestions.map(async (item) => {
+              if (item.max_mark <= 0) return { ...item, mark: 0 };
+              
+              try {
+                  const response = await openai.chat.completions.create({
+                      model: "gpt-3.5-turbo",
+                      messages: [
+                          {
+                              role: "system",
+                              content: "You are an expert exam evaluator. Provide only numeric scores."
+                          },
+                          {
+                              role: "user",
+                              content: `Evaluate (0-${item.max_mark}): Q: ${item.question_text} A: ${item.answer}`
+                          }
+                      ],
+                      max_tokens: 5,
+                      temperature: 0.3
+                  });
+                  
+                  const score = parseFloat(response.choices[0]?.message?.content?.trim()) || 0;
+                  return { ...item, mark: Math.min(Math.max(0, score), item.max_mark) };
+              } catch (error) {
+                  console.error("AI error:", error);
+                  return { ...item, mark: 0 };
+              }
+          })
+      );
+    */
+      // [Rest of your existing code...]
+      // 4. Calculate total marks
+      const totalMarks = evaluatedAnswers.reduce((sum, item) => sum + item.mark, 0);
+
+      // 5. Insert answers with AI-evaluated marks
+      const insertAnswersSql = `
+          INSERT INTO subjective_answer 
+          (question_id, student_regno, answer, mark) 
+          VALUES ?
+      `;
+      const answerValues = evaluatedAnswers.map(item => [
+          item.question_id,
+          req.params.regno,
+          item.answer,
+          item.mark
+      ]);
+      
+      await db.query(insertAnswersSql, [answerValues]);
+
+      // 6. Update results
+      const updateResultSql = `
+          INSERT INTO subjective_result 
+          (subjective_id, student_regno, total_mark) 
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE total_mark = ?
+      `;
+      await db.query(updateResultSql, [
+          req.params.subjective_id,
+          req.params.regno,
+          totalMarks,
+          totalMarks
+      ]);
+
+      // // 7. Update exam result
+      // const examResultSql = `
+      //     INSERT INTO exam_result 
+      //     (exam_id, student_regno, quiz_mark, subjective_mark) 
+      //     VALUES (?, ?, ?, ?)
+      //     ON DUPLICATE KEY UPDATE subjective_mark = ?
+      // `;
+      // const quizMark = req.params.quiz_id && req.params.quiz_id != 0 ? -1 : -2;
+      // await db.query(examResultSql, [
+      //     req.params.exam_id,
+      //     req.params.regno,
+      //     quizMark,
+      //     totalMarks,
+      //     totalMarks
+      // ]);
+      if(req.params.quiz_id == null || req.params.quiz_id==0){
+        console.log(req.params.exam_id)
+        console.log(req.params.regno)
+
+        
+        const sql2 = "insert into exam_result (exam_id,student_regno,quiz_mark,subjective_mark,total) values (?,?,?,?,?)";
+        const value2=[req.params.exam_id,req.params.regno,-1,totalMarks,totalMarks];
+        db.query(sql2,value2,(err,result)=>{
+            if(err)
+                console.log("Error inserting to result")
+        })
+    }
+    else{
+      console.log("first")
+        //no need because quiz already enters attended details in exam details table and nothing to change as mark is 0
+        const sql3 = "update exam_result set subjective_mark=?,total=quiz_mark+? where student_regno=? and exam_id=?"
+        const value3=[totalMarks,totalMarks,req.params.regno,req.params.exam_id];
+        db.query(sql3,value3,(err,result)=>{
+            if(err)
+                console.log("Error inserting to resultsd    ")
+        })
+    }
+      res.json({ 
+          success: true,
+          message: 'Answers evaluated and saved successfully',
+          totalMarks 
+      });
+  } catch (err) {
+      console.error("Error:", err);
+      res.status(500).json({ success: false, message: 'Evaluation failed' });
+  }
+});
+/*
+app.post('/attemptSubjective/:regno/:subjective_id/:quiz_id/:exam_id', async (req, res) => {
+    try {
+        // 1. First get all questions with their max marks
+        const getQuestionsSql = `
+            SELECT question_id, question_title, mark 
+            FROM subjective_questions 
+            WHERE subjective_id = ?
+        `;
+        
+        const [questions] = await db.promise().query(getQuestionsSql, [req.params.subjective_id]);
+        
+        // 2. Prepare answers with their corresponding questions
+        const answersWithQuestions = req.body.map(answer => {
+            const question = questions.find(q => q.question_id === answer.question_id);
+            return {
+                ...answer,
+                question_text: question?.question_title || '',
+                max_mark: question?.mark || 0
+            };
+        });
+
+        // 3. Evaluate each answer using AI
+        const evaluatedAnswers = await Promise.all(
+            answersWithQuestions.map(async (item) => {
+                if (item.max_mark <= 0) return { ...item, mark: 0 };
+                
+                try {
+                    const prompt = `
+                        You are an expert exam evaluator. Evaluate this answer based on the question and provide a score from 0 to ${item.max_mark}.
+                        
+                        Question: ${item.question_text}
+                        Answer: ${item.answer}
+                        
+                        Evaluation criteria:
+                        - Accuracy of content (50%)
+                        - Completeness of response (30%)
+                        - Clarity and organization (20%)
+                        
+                        Provide ONLY the numeric score between 0 and ${item.max_mark}, nothing else.
+                    `;
+                    
+                    const aiResponse = await openai.createCompletion({
+                        model: "text-davinci-003",
+                        prompt: prompt,
+                        max_tokens: 5,
+                        temperature: 0.3
+                    });
+                    
+                    // Extract numeric score from AI response
+                    const aiScore = parseFloat(aiResponse.data.choices[0].text.trim());
+                    const finalMark = Math.min(Math.max(0, aiScore), item.max_mark); // Clamp between 0-max
+                    
+                    return { ...item, mark: finalMark };
+                } catch (aiError) {
+                    console.error("AI evaluation failed:", aiError);
+                    return { ...item, mark: 0 }; // Fallback to 0 if AI fails
+                }
+            })
+        );
+
+        // 4. Calculate total marks
+        const totalMarks = evaluatedAnswers.reduce((sum, item) => sum + item.mark, 0);
+
+        // 5. Insert answers with AI-evaluated marks
+        const insertAnswersSql = `
+            INSERT INTO subjective_answer 
+            (question_id, student_regno, answer, mark) 
+            VALUES ?
+        `;
+        const answerValues = evaluatedAnswers.map(item => [
+            item.question_id,
+            req.params.regno,
+            item.answer,
+            item.mark
+        ]);
+        
+        await db.promise().query(insertAnswersSql, [answerValues]);
+
+        // 6. Update results
+        const updateResultSql = `
+            INSERT INTO subjective_result 
+            (subjective_id, student_regno, total_mark) 
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE total_mark = ?
+        `;
+        await db.promise().query(updateResultSql, [
+            req.params.subjective_id,
+            req.params.regno,
+            totalMarks,
+            totalMarks
+        ]);
+
+        // 7. Update exam result
+        const examResultSql = `
+            INSERT INTO exam_result 
+            (exam_id, student_regno, quiz_mark, subjective_mark) 
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE subjective_mark = ?
+        `;
+        const quizMark = req.params.quiz_id && req.params.quiz_id != 0 ? -1 : -2;
+        await db.promise().query(examResultSql, [
+            req.params.exam_id,
+            req.params.regno,
+            quizMark,
+            totalMarks,
+            totalMarks
+        ]);
+
+        res.json({ 
+            success: true,
+            message: 'Answers evaluated and saved successfully',
+            totalMarks 
+        });
+
+    } catch (err) {
+        console.error("Error in subjective answer submission:", err);
+        res.status(500).json({ 
+            success: false,
+            message: 'An error occurred during evaluation'
+        });
+    }
+});*/
 app.post('/getExams',(req,res)=>{
     // sql ="select * from exam inner join subject on exam.subject_id = subject.subject_id inner join course on subject.course_id = course.course_id inner join quiz on quiz.quiz_id = exam.quiz_id inner join subjective on subjective.subjective_id = exam.subjective_id where subject.course_id = ? and subject.course_sem=?";
     sql = "SELECT * FROM exam INNER JOIN subject ON exam.subject_id = subject.subject_id where exam.teacher_id =? ";
@@ -1005,7 +1587,7 @@ app.post('/getBoth', async (req, res) => {
         INNER JOIN quiz_result ON quiz_result.quiz_id = exam.quiz_id 
         INNER JOIN users ON users.user_regno = quiz_result.student_regno 
         WHERE exam.exam_id = ?`;
-    const valuesExam = [req.body.exam_id];
+    const valuesExam = [req.body.examid];
 
     try {
         db.query(sqlExam, valuesExam, async (err, result) => {
@@ -1943,7 +2525,141 @@ wss.on("connection", (ws, req) => {
     });
   }
 });
+// Get result statistics for an exam
 
+// router.get('/api/exam-analysis/:exam_id', async (req, res) => {
+//   try {
+//       const examId = req.params.exam_id;
+
+//       // Basic statistics
+//       const [stats] = await db.query(`
+//           SELECT 
+//               COUNT(*) as total_students,
+//               AVG(total) as average_score,
+//               MAX(total) as top_score,
+//               MIN(total) as lowest_score,
+//               SUM(CASE WHEN total >= 50 THEN 1 ELSE 0 END) as pass_count,
+//               SUM(CASE WHEN total < 50 THEN 1 ELSE 0 END) as fail_count
+//           FROM exam_result
+//           WHERE exam_id = ?
+//       `, [examId]);
+
+//       // Score distribution for histogram
+//       const [distribution] = await db.query(`
+//           SELECT 
+//               FLOOR(total/10)*10 as score_range,
+//               COUNT(*) as student_count
+//           FROM exam_result
+//           WHERE exam_id = ?
+//           GROUP BY FLOOR(total/10)*10
+//           ORDER BY score_range
+//       `, [examId]);
+
+//       // Top performers
+//       const [topPerformers] = await db.query(`
+//           SELECT student_regno, total
+//           FROM exam_result
+//           WHERE exam_id = ?
+//           ORDER BY total DESC
+//           LIMIT 5
+//       `, [examId]);
+
+//       res.json({
+//           success: true,
+//           data: {
+//               ...stats[0],
+//               distribution,
+//               topPerformers
+//           }
+//       });
+//   } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ success: false, message: 'Failed to fetch analysis' });
+//   }
+// });
+
+// // Get list of exams for dropdown
+// router.get('/api/exams', async (req, res) => {
+//   try {
+//       const [exams] = await db.query('SELECT DISTINCT exam_id FROM exam_result ORDER BY exam_id DESC');
+//       res.json({ success: true, data: exams });
+//   } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ success: false, message: 'Failed to fetch exams' });
+//   }
+// });
+
+// module.exports = router;
+// Result Analysis Endpoints
+app.get('/exams', (req, res) => {
+  const sql = "SELECT DISTINCT exam_id FROM exam_result ORDER BY exam_id DESC";
+  db.query(sql, (err, data) => {
+      if (err) return res.json(err);
+      return res.json(data);
+  });
+});
+
+app.get('/exam-analysis/:exam_id', (req, res) => {
+  const examId = req.params.exam_id;
+  
+  // Query for basic statistics
+  const statsSql = `
+      SELECT 
+          COUNT(*) as total_students,
+          AVG(total) as average_score,
+          MAX(total) as top_score,
+          MIN(total) as lowest_score,
+          SUM(CASE WHEN total >= 10 THEN 1 ELSE 0 END) as pass_count,
+          SUM(CASE WHEN total < 10 THEN 1 ELSE 0 END) as fail_count
+      FROM exam_result
+      WHERE exam_id = ?
+  `;
+  
+  // Query for score distribution
+  const distributionSql = `
+      SELECT 
+          FLOOR(total/10)*10 as score_range,
+          COUNT(*) as student_count
+      FROM exam_result
+      WHERE exam_id = ?
+      GROUP BY FLOOR(total/10)*10
+      ORDER BY score_range
+  `;
+  
+  // Query for top performers
+  const topPerformersSql = `
+      SELECT student_regno, total
+      FROM exam_result
+      WHERE exam_id = ?
+      ORDER BY total DESC
+      LIMIT 5
+  `;
+  
+  // Execute all queries
+  db.query(statsSql, [examId], (err, stats) => {
+      if (err) return res.json(err);
+      
+      db.query(distributionSql, [examId], (err, distribution) => {
+          if (err) return res.json(err);
+          
+          db.query(topPerformersSql, [examId], (err, topPerformers) => {
+              if (err) return res.json(err);
+              
+              // Combine all results
+              return res.json({
+                  total_students: stats[0].total_students,
+                  average_score: stats[0].average_score,
+                  top_score: stats[0].top_score,
+                  lowest_score: stats[0].lowest_score,
+                  pass_count: stats[0].pass_count,
+                  fail_count: stats[0].fail_count,
+                  distribution: distribution,
+                  topPerformers: topPerformers
+              });
+          });
+      });
+  });
+});
 // Optional: Fallback API for initial student list (if needed)
 
 app.listen(PORT)

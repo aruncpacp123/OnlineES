@@ -3,11 +3,12 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/navbar'
 import { Tabs,TabsContent,TabsList,TabsTrigger,} from "@/components/ui/tabs"
 import Questions from './Questions';
-import Analysis from './Analysis';
+import ResultAnalysis from './ResultAnalysis';
 import Malpractice from './Malpractice';
 import { Button } from '@/components/ui/button';
 import TeacherLiveDashboard from './Live';
 import StudentList from './Mark';
+import ViewAttended from '../ViewAttended';
 
 
 export default function ManageExam() {
@@ -54,16 +55,15 @@ logout();
                   <TeacherLiveDashboard /> 
               </TabsContent>
               <TabsContent value="mark">                 
-                  <StudentList /> 
+                  {/* <StudentList />  */}
+                  <ViewAttended />
               </TabsContent>
               <TabsContent value="analysis">                 
-                  <Analysis /> 
+                  <ResultAnalysis /> 
               </TabsContent>
               <TabsContent value="malpractice">                 
                   <Malpractice /> 
-              </TabsContent>
-
-              
+              </TabsContent>              
             </Tabs>
         </div>
     </div>

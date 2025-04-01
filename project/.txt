@@ -19,7 +19,7 @@ If we want old versions also keep it in another branch and deploy the latest ver
 2.Preventing Screen Switching --
 3.Copy-Paste --
 4.Approval-Based Signup System -- 
-5.Analytics System for Exam Marks
+5.Analytics System for Exam Marks to do 
 6.Resumption of Exams
 7.Face Detection System
-8.AI-Based Answer Correction System
+8.AI-Based Answer Correction System to do

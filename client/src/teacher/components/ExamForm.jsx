@@ -48,8 +48,7 @@ export default function ExamForm() {
                 navigate('/teacher/exam/step1',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })
             else
                 navigate('/teacher/exam/step2',{ state: { exam_id:res.data.exam_id,subjective_id:res.data.subjective_id,quiz_id:res.data.quiz_id,sub_no:formFields.subjective,quiz_no:formFields.objective} })
-                
-
+              
             console.log(res.data);
             
         }catch(err){
