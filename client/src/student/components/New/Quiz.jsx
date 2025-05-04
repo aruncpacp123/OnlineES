@@ -157,7 +157,7 @@ export default function Quiz() {
     try {
       await axios.post(`${import.meta.env.VITE_URL}/logMalpractice`, {
         exam_id,
-        student_id: userId,
+        student_id: regno,
         type,
         image: imageData,
         timestamp: new Date().toISOString()
@@ -437,7 +437,7 @@ export default function Quiz() {
                   <div className="text-sm text-gray-500">
                     Selected: {formFields[currentQuestionIndex]?.answer || 'None'}
                   </div>
-                  {currentQuestionIndex < quizQuestions.length - 1 ? (
+                  {/* {currentQuestionIndex < quizQuestions.length - 1 ? (
                     <Button
                       type="button"
                       onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
@@ -448,7 +448,20 @@ export default function Quiz() {
                     <Button type="submit" className="bg-green-600 hover:bg-green-700">
                       Submit Exam
                     </Button>
-                  )}
+                  )} */}
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (currentQuestionIndex < quizQuestions.length - 1) {
+                        setCurrentQuestionIndex((prev) => prev + 1);
+                      } else {
+                        submit();
+                      }
+                    }}
+                    className={currentQuestionIndex === quizQuestions.length - 1 ? 'bg-green-600 hover:bg-green-700' : ''}
+                  >
+                    {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'Submit Exam'}
+                  </Button>
                 </CardFooter>
               </Card>
             )}

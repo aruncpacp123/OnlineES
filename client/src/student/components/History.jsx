@@ -58,8 +58,8 @@ export default function ExamHistory() {
 
   const getScoreColor = (mark) => {
     if (mark < 0) return "text-gray-500";
-    if (mark >= 80) return "text-green-600 font-bold";
-    if (mark >= 50) return "text-blue-600";
+    if (mark >= 10) return "text-green-600 font-bold";
+    if (mark >= 10) return "text-blue-600";
     return "text-red-600";
   };
 
@@ -74,12 +74,12 @@ export default function ExamHistory() {
           <Table className="border rounded-lg overflow-hidden">
             <TableHeader className="bg-gradient-to-r from-blue-600 to-indigo-700">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="text-white font-bold">#</TableHead>
-                <TableHead className="text-white font-bold">Exam Name</TableHead>
-                <TableHead className="text-white font-bold">Subject</TableHead>
-                <TableHead className="text-white font-bold">Quiz</TableHead>
-                <TableHead className="text-white font-bold">Subjective</TableHead>
-                <TableHead className="text-white font-bold">Total</TableHead>
+                <TableHead className="text-green-500 font-bold">#</TableHead>
+                <TableHead className="text-green-500 font-bold">Exam Name</TableHead>
+                <TableHead className="text-green-500 font-bold">Subject</TableHead>
+                <TableHead className="text-green-500 font-bold">Quiz</TableHead>
+                <TableHead className="text-green-500 font-bold">Subjective</TableHead>
+                <TableHead className="text-green-500 font-bold">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

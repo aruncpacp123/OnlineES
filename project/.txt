@@ -8,6 +8,7 @@ There are mainly three branches
 
 6.Image Upload for Questions
 7.Real-Time Exam Monitoring
+6.Resumption of Exams
 
 Actually all three branches have same code after a deployment.
 If we want major changes we can create any branches and also we can deploy from different branches as different versions.
@@ -15,11 +16,10 @@ If we want old versions also keep it in another branch and deploy the latest ver
 
 #Need to Implement
 
-1.Proctoring System:(Multiple Faces and moving face away from screen) --
-2.Preventing Screen Switching --
-3.Copy-Paste --
-4.Approval-Based Signup System -- 
-5.Analytics System for Exam Marks to do 
-6.Resumption of Exams
-7.Face Detection System
-8.AI-Based Answer Correction System to do
+1.Proctoring System:(Multiple Faces and moving face away from screen) -- faceapi
+2.Preventing Screen Switching -- js
+3.Copy-Paste -- js
+4.Approval-Based Signup System -- db
+5.Analytics System for Exam Marks -- chart js
+7.Face Detection System -- faceapi
+8.AI-Based Answer Correction System to do -- gemini

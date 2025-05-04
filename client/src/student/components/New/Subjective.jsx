@@ -492,9 +492,9 @@ export default function SubjectiveExam() {
       });
     };
     
-    // document.addEventListener('copy', preventDefault);
-    // document.addEventListener('paste', preventDefault);
-    // document.addEventListener('cut', preventDefault);
+    document.addEventListener('copy', preventDefault);
+    document.addEventListener('paste', preventDefault);
+    document.addEventListener('cut', preventDefault);
     
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -646,7 +646,7 @@ export default function SubjectiveExam() {
     try {
       await axios.post(`${import.meta.env.VITE_URL}/logMalpractice`, {
         exam_id,
-        student_id: userId,
+        student_id: regno,
         type,
         image: imageData,
         timestamp: new Date().toISOString()

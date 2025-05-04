@@ -1793,7 +1793,7 @@ app.post('/addMark/:regno/:subjective_id/:exam_id', (req, res) => {
 
 
 app.post('/getStudentDetails',(req,res)=>{
-    sql="SELECT * FROM `users` inner join student on users.user_id = student.student_id where users.user_regno = ?";
+    sql="SELECT * FROM `users` inner join student on users.user_id = student.student_id where users.user_regno = ? ";
     db.query(sql,[req.body.user_id],(err,result)=>{
         if(err)
             return res.json({message:'Some Error Occured' + err})
@@ -2661,5 +2661,34 @@ app.get('/exam-analysis/:exam_id', (req, res) => {
   });
 });
 // Optional: Fallback API for initial student list (if needed)
-
+// GET first 3 malpractice logs for a student in an exam
+app.get('/malpractice/:regno/:examid', (req, res) => {
+    const { regno, examid } = req.params;
+    
+    const sql = `
+        SELECT * FROM malpractice_logs 
+        WHERE student_id = ? AND exam_id = ?
+        ORDER BY created_at DESC
+        LIMIT 3
+    `;
+    
+    db.query(sql, [regno, examid], (err, results) => {
+        if (err) {
+            console.error('Error fetching malpractice logs:', err);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error fetching malpractice data' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: results.map(log => ({
+                ...log,
+                // Convert timestamp to readable format if needed
+                timestamp: new Date(log.created_at).toLocaleString()
+            }))
+        });
+    });
+});
 app.listen(PORT)

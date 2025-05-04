@@ -41,12 +41,12 @@ logout();
         <div className="flex border-t-4 border-t-slate-800">
             <Button className="fixed right-3 px-5 text-lg" onClick={goBack}><i class="bi bi-box-arrow-in-left"></i></Button>
             <Tabs defaultValue="question" className="min-w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="question">Questions</TabsTrigger>
                 <TabsTrigger value="live">Live</TabsTrigger>
                 <TabsTrigger value="mark">Students Marks</TabsTrigger>
                 <TabsTrigger value="analysis">Analysis</TabsTrigger>
-                <TabsTrigger value="malpractice">Malpractices</TabsTrigger>
+                {/* <TabsTrigger value="malpractice">Malpractices</TabsTrigger> */}
               </TabsList>
               <TabsContent value="question">               
                   <Questions/> 
@@ -61,9 +61,9 @@ logout();
               <TabsContent value="analysis">                 
                   <ResultAnalysis /> 
               </TabsContent>
-              <TabsContent value="malpractice">                 
+              {/* <TabsContent value="malpractice">                 
                   <Malpractice /> 
-              </TabsContent>              
+              </TabsContent>               */}
             </Tabs>
         </div>
     </div>
